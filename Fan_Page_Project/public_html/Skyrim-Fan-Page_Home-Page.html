@@ -7,8 +7,39 @@ Main page for the Skyrim Fan Page Project
       <title>
          Skyrim Fan Page | Home Page 1
       </title>
+      <style>
+         .dragongGlitch{
+            -webkit-animation-name: example; /* Safari 4.0 - 8.0 */
+            -webkit-animation-duration: 20s; /* Safari 4.0 - 8.0 */
+            -webkit-animation-delay: 20s; /* Safari 4.0 - 8.0 */
+            animation-name: dragongGitch;
+            animation-duration: 20s;
+            animation-delay: 20s;
+         }
+         
+         /* Safari 4.0 - 8.0 */
+         @-webkit-keyframes dragongGitch {
+           0%   {left:0px; top:0px;}
+           25%  {left:200px; top:0px;}
+           50%  {left:200px; top:200px;}
+           75%  {left:0px; top:200px;}
+           100% {left:0px; top:0px;}
+         }
+
+         /* Standard syntax */
+         @keyframes dragongGitch {
+           0%   {left:0px; top:0px;}
+           25%  {left:200px; top:0px;}
+           50%  {left:200px; top:200px;}
+           75%  {left:0px; top:200px;}
+           100% {left:0px; top:0px;}
+         }
+      </style>
    </head>
-   <body">
+   <body>
+      <div class=".dragonGlitch" style="background-image:url('http://mlquadri.github.io/Library/Images/skyrim-glitch-dragon.gif'); width:500px; height:500px; margin:auto; text-align:center; left:55000px; top:5000px;">
+         Skyrim is glitchy as sh!t
+      </div>
       <div>
          <h1 style="color:white; background-image:url('http://mlquadri.github.io/Library/Images/Elder-Scrolls-Skyrim-header.jpg'); width:1600px; height:60px; margin:auto; text-align:center;">
             Skyrim Fan Page
