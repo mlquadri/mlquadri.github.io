@@ -19,6 +19,21 @@ Main page for the Skyrim Fan Page Project
             animation-name: dragonGlitching;
             animation-duration: 100s;
             animation-delay: 20s;
+            animation-iteration-count: 15;
+            -webkit-animation-name: dragonGlitching; /* Safari 4.0 - 8.0 */
+            -webkit-animation-duration: 100s; /* Safari 4.0 - 8.0 */
+            -webkit-animation-delay: 20s; /* Safari 4.0 - 8.0 */
+            -webkit-animation-iteration-count: 15; /* Safari 4.0 - 8.0 */
+         }
+         
+         /* Safari 4.0 - 8.0 */
+         @-webkit-keyframes dragonGlitching {
+            0%   {background-color:red; left:0px; top:0px;}
+            20%   {left:0px; top:1500px;}
+            25%  {left:1400px; top:0px;}
+            50%  {left:1400px; top:2000px;}
+            75%  {left:0px; top:1500px;}
+            100% {left:0px; top:1500px;}
          }
 
          /* Standard syntax */
