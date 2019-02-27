@@ -15,7 +15,7 @@ var intervalID = setInterval(fps, 1000);
 ///////////////////////////////////////////////////////////////////////////////////
 
 function preload(){
-	enemyPic = loadImage("Library/Images/SpaceInvaders.png");
+	enemyPic = loadImage("Library/Images/asteroid.png");
 	player = loadImage("Library/Images/SpaceShip.png");
 	game_over = loadImage("Library/Images/Game_Over.png");
 }
@@ -81,11 +81,11 @@ function addEnemy(){
 
 function collitionTest(){
 	for (var i = 0; i < enemyList.length; i++){
+		//var distance = Math.pow( (Math.pow( mouseX−(enemyList[i].getx()), 2)+Math.pow( mouseY−(enemyList[i].gety()), 2)) , (1/2));
 		if( (mouseX == enemyList[i].getx()) && (mouseY == enemyList[i].gety()) ){
 			lives--;
 			enemyList.splice(i,1);
 		}
-		print(mouseX, enemyList[i].getx(), mouseY, enemyList[i].gety());
 	}
 }
 
