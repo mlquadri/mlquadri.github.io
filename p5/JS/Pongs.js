@@ -32,11 +32,11 @@ function draw(){
 	if(lose != true){
 		background(205, 120, 180);
 		if( (mouseY > userSize) || (mouseY< windowHeight-userSize) ){ 
-			rect(0, mouseY, 1, userSize);
+			rect(5, mouseY, 1, userSize);
 		}else if((mouseY > userSize)){
-			rect(0, (userSize), 1, userSize);
+			rect(5, (userSize), 1, userSize);
 		}else if ((mouseY < windowHeight-userSize)) {
-			rect(0, (windowHeight-userSize), 1, userSize);
+			rect(5, (windowHeight-userSize), 1, userSize);
 		}else{
 			print(Error)
 		}
