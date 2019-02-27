@@ -45,7 +45,7 @@ function draw(){
 		image(enemyPic, enemyX, enemyY, enemySize, enemySize)
 		rect(windowWidth-25, enemyY, 2, userSize);
 	}else{
-		image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight)
+		image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight);
 	}
 
 	//checks if the ball is still in bounds and if it needs to bounce

@@ -36,7 +36,7 @@ function draw(){
 		game();
 	}else{
 	background(0, 0, 0);
-		image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight)
+		image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight);
 	}
 }
 
