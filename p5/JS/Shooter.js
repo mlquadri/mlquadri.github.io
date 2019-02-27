@@ -6,6 +6,7 @@ var shotList = [];
 var enemySize = 50;
 var newEnemys = 2;
 var type = "1"
+var score = 0;
 var lives = 2;
 var enemyPic;
 var shotPic;
@@ -36,7 +37,8 @@ function draw(){
 		game();
 	}else{
 	background(0, 0, 0);
-		image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight);
+	image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight);
+	alert(score);
 	}
 }
 
@@ -138,6 +140,7 @@ function collitionTest(){
 				if( (shotList[i].getx() == enemyList[x].getx()) && ((shotList[i].gety() == enemyList[x].gety()) || (shotList[i].gety() == enemyList[x].gety()+enemySize)) ){
 					shotList.splice(i,1);
 					enemyList.splice(x,1);
+					score+=10;
 				}
 			}catch(err){
 					print(err)
