@@ -43,7 +43,7 @@ function draw(){
 		enemyX += direction;
 		enemyY += angle;
 		image(enemyPic, enemyX, enemyY, enemySize, enemySize)
-		rect(windowWidth, enemyY, 2, userSize);
+		rect(windowWidth-5, enemyY, 2, userSize);
 	}else{
 		image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight);
 	}
