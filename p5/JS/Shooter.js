@@ -35,10 +35,12 @@ function draw(){
 	//checks if the game is runing
 	if(lives >= 0){
 		game();
+	}else if(lives == -1){
+		alert(score);
+		lives--;
 	}else{
 	background(0, 0, 0);
 	image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight);
-	alert(score);
 	}
 }
 
