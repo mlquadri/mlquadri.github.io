@@ -1,164 +1,138 @@
-/*! p5.js v0.7.3 January 20, 2019 */
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.p5 = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(_dereq_,module,exports){
-'use strict'
+/*! p5.js v0.7.2 September 02, 2018 */
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.p5 = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
-exports.byteLength = byteLength
-exports.toByteArray = toByteArray
-exports.fromByteArray = fromByteArray
+;(function (exports) {
+	'use strict';
 
-var lookup = []
-var revLookup = []
-var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+  var Arr = (typeof Uint8Array !== 'undefined')
+    ? Uint8Array
+    : Array
 
-var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-for (var i = 0, len = code.length; i < len; ++i) {
-  lookup[i] = code[i]
-  revLookup[code.charCodeAt(i)] = i
-}
+	var PLUS   = '+'.charCodeAt(0)
+	var SLASH  = '/'.charCodeAt(0)
+	var NUMBER = '0'.charCodeAt(0)
+	var LOWER  = 'a'.charCodeAt(0)
+	var UPPER  = 'A'.charCodeAt(0)
+	var PLUS_URL_SAFE = '-'.charCodeAt(0)
+	var SLASH_URL_SAFE = '_'.charCodeAt(0)
 
-// Support decoding URL-safe base64 strings, as Node.js does.
-// See: https://en.wikipedia.org/wiki/Base64#URL_applications
-revLookup['-'.charCodeAt(0)] = 62
-revLookup['_'.charCodeAt(0)] = 63
+	function decode (elt) {
+		var code = elt.charCodeAt(0)
+		if (code === PLUS ||
+		    code === PLUS_URL_SAFE)
+			return 62 // '+'
+		if (code === SLASH ||
+		    code === SLASH_URL_SAFE)
+			return 63 // '/'
+		if (code < NUMBER)
+			return -1 //no match
+		if (code < NUMBER + 10)
+			return code - NUMBER + 26 + 26
+		if (code < UPPER + 26)
+			return code - UPPER
+		if (code < LOWER + 26)
+			return code - LOWER + 26
+	}
 
-function getLens (b64) {
-  var len = b64.length
+	function b64ToByteArray (b64) {
+		var i, j, l, tmp, placeHolders, arr
 
-  if (len % 4 > 0) {
-    throw new Error('Invalid string. Length must be a multiple of 4')
-  }
+		if (b64.length % 4 > 0) {
+			throw new Error('Invalid string. Length must be a multiple of 4')
+		}
 
-  // Trim off extra bytes after placeholder bytes are found
-  // See: https://github.com/beatgammit/base64-js/issues/42
-  var validLen = b64.indexOf('=')
-  if (validLen === -1) validLen = len
+		// the number of equal signs (place holders)
+		// if there are two placeholders, than the two characters before it
+		// represent one byte
+		// if there is only one, then the three characters before it represent 2 bytes
+		// this is just a cheap hack to not do indexOf twice
+		var len = b64.length
+		placeHolders = '=' === b64.charAt(len - 2) ? 2 : '=' === b64.charAt(len - 1) ? 1 : 0
 
-  var placeHoldersLen = validLen === len
-    ? 0
-    : 4 - (validLen % 4)
+		// base64 is 4/3 + up to two characters of the original data
+		arr = new Arr(b64.length * 3 / 4 - placeHolders)
 
-  return [validLen, placeHoldersLen]
-}
+		// if there are placeholders, only get up to the last complete 4 chars
+		l = placeHolders > 0 ? b64.length - 4 : b64.length
 
-// base64 is 4/3 + up to two characters of the original data
-function byteLength (b64) {
-  var lens = getLens(b64)
-  var validLen = lens[0]
-  var placeHoldersLen = lens[1]
-  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
-}
+		var L = 0
 
-function _byteLength (b64, validLen, placeHoldersLen) {
-  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
-}
+		function push (v) {
+			arr[L++] = v
+		}
 
-function toByteArray (b64) {
-  var tmp
-  var lens = getLens(b64)
-  var validLen = lens[0]
-  var placeHoldersLen = lens[1]
+		for (i = 0, j = 0; i < l; i += 4, j += 3) {
+			tmp = (decode(b64.charAt(i)) << 18) | (decode(b64.charAt(i + 1)) << 12) | (decode(b64.charAt(i + 2)) << 6) | decode(b64.charAt(i + 3))
+			push((tmp & 0xFF0000) >> 16)
+			push((tmp & 0xFF00) >> 8)
+			push(tmp & 0xFF)
+		}
 
-  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen))
+		if (placeHolders === 2) {
+			tmp = (decode(b64.charAt(i)) << 2) | (decode(b64.charAt(i + 1)) >> 4)
+			push(tmp & 0xFF)
+		} else if (placeHolders === 1) {
+			tmp = (decode(b64.charAt(i)) << 10) | (decode(b64.charAt(i + 1)) << 4) | (decode(b64.charAt(i + 2)) >> 2)
+			push((tmp >> 8) & 0xFF)
+			push(tmp & 0xFF)
+		}
 
-  var curByte = 0
+		return arr
+	}
 
-  // if there are placeholders, only get up to the last complete 4 chars
-  var len = placeHoldersLen > 0
-    ? validLen - 4
-    : validLen
+	function uint8ToBase64 (uint8) {
+		var i,
+			extraBytes = uint8.length % 3, // if we have 1 byte left, pad 2 bytes
+			output = "",
+			temp, length
 
-  for (var i = 0; i < len; i += 4) {
-    tmp =
-      (revLookup[b64.charCodeAt(i)] << 18) |
-      (revLookup[b64.charCodeAt(i + 1)] << 12) |
-      (revLookup[b64.charCodeAt(i + 2)] << 6) |
-      revLookup[b64.charCodeAt(i + 3)]
-    arr[curByte++] = (tmp >> 16) & 0xFF
-    arr[curByte++] = (tmp >> 8) & 0xFF
-    arr[curByte++] = tmp & 0xFF
-  }
+		function encode (num) {
+			return lookup.charAt(num)
+		}
 
-  if (placeHoldersLen === 2) {
-    tmp =
-      (revLookup[b64.charCodeAt(i)] << 2) |
-      (revLookup[b64.charCodeAt(i + 1)] >> 4)
-    arr[curByte++] = tmp & 0xFF
-  }
+		function tripletToBase64 (num) {
+			return encode(num >> 18 & 0x3F) + encode(num >> 12 & 0x3F) + encode(num >> 6 & 0x3F) + encode(num & 0x3F)
+		}
 
-  if (placeHoldersLen === 1) {
-    tmp =
-      (revLookup[b64.charCodeAt(i)] << 10) |
-      (revLookup[b64.charCodeAt(i + 1)] << 4) |
-      (revLookup[b64.charCodeAt(i + 2)] >> 2)
-    arr[curByte++] = (tmp >> 8) & 0xFF
-    arr[curByte++] = tmp & 0xFF
-  }
+		// go through the array every three bytes, we'll deal with trailing stuff later
+		for (i = 0, length = uint8.length - extraBytes; i < length; i += 3) {
+			temp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+			output += tripletToBase64(temp)
+		}
 
-  return arr
-}
+		// pad the end with zeros, but make sure to not forget the extra bytes
+		switch (extraBytes) {
+			case 1:
+				temp = uint8[uint8.length - 1]
+				output += encode(temp >> 2)
+				output += encode((temp << 4) & 0x3F)
+				output += '=='
+				break
+			case 2:
+				temp = (uint8[uint8.length - 2] << 8) + (uint8[uint8.length - 1])
+				output += encode(temp >> 10)
+				output += encode((temp >> 4) & 0x3F)
+				output += encode((temp << 2) & 0x3F)
+				output += '='
+				break
+		}
 
-function tripletToBase64 (num) {
-  return lookup[num >> 18 & 0x3F] +
-    lookup[num >> 12 & 0x3F] +
-    lookup[num >> 6 & 0x3F] +
-    lookup[num & 0x3F]
-}
+		return output
+	}
 
-function encodeChunk (uint8, start, end) {
-  var tmp
-  var output = []
-  for (var i = start; i < end; i += 3) {
-    tmp =
-      ((uint8[i] << 16) & 0xFF0000) +
-      ((uint8[i + 1] << 8) & 0xFF00) +
-      (uint8[i + 2] & 0xFF)
-    output.push(tripletToBase64(tmp))
-  }
-  return output.join('')
-}
-
-function fromByteArray (uint8) {
-  var tmp
-  var len = uint8.length
-  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
-  var parts = []
-  var maxChunkLength = 16383 // must be multiple of 3
-
-  // go through the array every three bytes, we'll deal with trailing stuff later
-  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-    parts.push(encodeChunk(
-      uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)
-    ))
-  }
-
-  // pad the end with zeros, but make sure to not forget the extra bytes
-  if (extraBytes === 1) {
-    tmp = uint8[len - 1]
-    parts.push(
-      lookup[tmp >> 2] +
-      lookup[(tmp << 4) & 0x3F] +
-      '=='
-    )
-  } else if (extraBytes === 2) {
-    tmp = (uint8[len - 2] << 8) + uint8[len - 1]
-    parts.push(
-      lookup[tmp >> 10] +
-      lookup[(tmp >> 4) & 0x3F] +
-      lookup[(tmp << 2) & 0x3F] +
-      '='
-    )
-  }
-
-  return parts.join('')
-}
+	exports.toByteArray = b64ToByteArray
+	exports.fromByteArray = uint8ToBase64
+}(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
 },{}],2:[function(_dereq_,module,exports){
 
 },{}],3:[function(_dereq_,module,exports){
+(function (global){
 /*!
  * The buffer module from node.js, for the browser.
  *
- * @author   Feross Aboukhadijeh <https://feross.org>
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
  * @license  MIT
  */
 /* eslint-disable no-proto */
@@ -167,336 +141,268 @@ function fromByteArray (uint8) {
 
 var base64 = _dereq_('base64-js')
 var ieee754 = _dereq_('ieee754')
+var isArray = _dereq_('isarray')
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
 exports.INSPECT_MAX_BYTES = 50
+Buffer.poolSize = 8192 // not used by this implementation
 
-var K_MAX_LENGTH = 0x7fffffff
-exports.kMaxLength = K_MAX_LENGTH
+var rootParent = {}
 
 /**
  * If `Buffer.TYPED_ARRAY_SUPPORT`:
  *   === true    Use Uint8Array implementation (fastest)
- *   === false   Print warning and recommend using `buffer` v4.x which has an Object
- *               implementation (most compatible, even IE6)
+ *   === false   Use Object implementation (most compatible, even IE6)
  *
  * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
  * Opera 11.6+, iOS 4.2+.
  *
- * We report that the browser does not support typed arrays if the are not subclassable
- * using __proto__. Firefox 4-29 lacks support for adding new properties to `Uint8Array`
- * (See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438). IE 10 lacks support
- * for __proto__ and has a buggy typed array implementation.
- */
-Buffer.TYPED_ARRAY_SUPPORT = typedArraySupport()
+ * Due to various browser bugs, sometimes the Object implementation will be used even
+ * when the browser supports typed arrays.
+ *
+ * Note:
+ *
+ *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
+ *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+ *
+ *   - Safari 5-7 lacks support for changing the `Object.prototype.constructor` property
+ *     on objects.
+ *
+ *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+ *
+ *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+ *     incorrect length in some situations.
 
-if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
-    typeof console.error === 'function') {
-  console.error(
-    'This browser lacks typed array (Uint8Array) support which is required by ' +
-    '`buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
-  )
-}
+ * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
+ * get the Object implementation, which is slower but behaves correctly.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = global.TYPED_ARRAY_SUPPORT !== undefined
+  ? global.TYPED_ARRAY_SUPPORT
+  : typedArraySupport()
 
 function typedArraySupport () {
-  // Can typed array instances can be augmented?
+  function Bar () {}
   try {
     var arr = new Uint8Array(1)
-    arr.__proto__ = { __proto__: Uint8Array.prototype, foo: function () { return 42 } }
-    return arr.foo() === 42
+    arr.foo = function () { return 42 }
+    arr.constructor = Bar
+    return arr.foo() === 42 && // typed array instances can be augmented
+        arr.constructor === Bar && // constructor can be set
+        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+        arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
   } catch (e) {
     return false
   }
 }
 
-Object.defineProperty(Buffer.prototype, 'parent', {
-  enumerable: true,
-  get: function () {
-    if (!Buffer.isBuffer(this)) return undefined
-    return this.buffer
-  }
-})
-
-Object.defineProperty(Buffer.prototype, 'offset', {
-  enumerable: true,
-  get: function () {
-    if (!Buffer.isBuffer(this)) return undefined
-    return this.byteOffset
-  }
-})
-
-function createBuffer (length) {
-  if (length > K_MAX_LENGTH) {
-    throw new RangeError('The value "' + length + '" is invalid for option "size"')
-  }
-  // Return an augmented `Uint8Array` instance
-  var buf = new Uint8Array(length)
-  buf.__proto__ = Buffer.prototype
-  return buf
+function kMaxLength () {
+  return Buffer.TYPED_ARRAY_SUPPORT
+    ? 0x7fffffff
+    : 0x3fffffff
 }
 
 /**
- * The Buffer constructor returns instances of `Uint8Array` that have their
- * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
- * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
- * and the `Uint8Array` methods. Square bracket notation works as expected -- it
- * returns a single octet.
+ * Class: Buffer
+ * =============
  *
- * The `Uint8Array` prototype remains unmodified.
+ * The Buffer constructor returns instances of `Uint8Array` that are augmented
+ * with function properties for all the node `Buffer` API functions. We use
+ * `Uint8Array` so that square bracket notation works as expected -- it returns
+ * a single octet.
+ *
+ * By augmenting the instances, we can avoid modifying the `Uint8Array`
+ * prototype.
  */
+function Buffer (arg) {
+  if (!(this instanceof Buffer)) {
+    // Avoid going through an ArgumentsAdaptorTrampoline in the common case.
+    if (arguments.length > 1) return new Buffer(arg, arguments[1])
+    return new Buffer(arg)
+  }
 
-function Buffer (arg, encodingOrOffset, length) {
+  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+    this.length = 0
+    this.parent = undefined
+  }
+
   // Common case.
   if (typeof arg === 'number') {
-    if (typeof encodingOrOffset === 'string') {
-      throw new TypeError(
-        'The "string" argument must be of type string. Received type number'
-      )
+    return fromNumber(this, arg)
+  }
+
+  // Slightly less common case.
+  if (typeof arg === 'string') {
+    return fromString(this, arg, arguments.length > 1 ? arguments[1] : 'utf8')
+  }
+
+  // Unusual.
+  return fromObject(this, arg)
+}
+
+function fromNumber (that, length) {
+  that = allocate(that, length < 0 ? 0 : checked(length) | 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+    for (var i = 0; i < length; i++) {
+      that[i] = 0
     }
-    return allocUnsafe(arg)
   }
-  return from(arg, encodingOrOffset, length)
+  return that
 }
 
-// Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
-if (typeof Symbol !== 'undefined' && Symbol.species != null &&
-    Buffer[Symbol.species] === Buffer) {
-  Object.defineProperty(Buffer, Symbol.species, {
-    value: null,
-    configurable: true,
-    enumerable: false,
-    writable: false
-  })
-}
+function fromString (that, string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') encoding = 'utf8'
 
-Buffer.poolSize = 8192 // not used by this implementation
-
-function from (value, encodingOrOffset, length) {
-  if (typeof value === 'string') {
-    return fromString(value, encodingOrOffset)
-  }
-
-  if (ArrayBuffer.isView(value)) {
-    return fromArrayLike(value)
-  }
-
-  if (value == null) {
-    throw TypeError(
-      'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
-      'or Array-like Object. Received type ' + (typeof value)
-    )
-  }
-
-  if (isInstance(value, ArrayBuffer) ||
-      (value && isInstance(value.buffer, ArrayBuffer))) {
-    return fromArrayBuffer(value, encodingOrOffset, length)
-  }
-
-  if (typeof value === 'number') {
-    throw new TypeError(
-      'The "value" argument must not be of type number. Received type number'
-    )
-  }
-
-  var valueOf = value.valueOf && value.valueOf()
-  if (valueOf != null && valueOf !== value) {
-    return Buffer.from(valueOf, encodingOrOffset, length)
-  }
-
-  var b = fromObject(value)
-  if (b) return b
-
-  if (typeof Symbol !== 'undefined' && Symbol.toPrimitive != null &&
-      typeof value[Symbol.toPrimitive] === 'function') {
-    return Buffer.from(
-      value[Symbol.toPrimitive]('string'), encodingOrOffset, length
-    )
-  }
-
-  throw new TypeError(
-    'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
-    'or Array-like Object. Received type ' + (typeof value)
-  )
-}
-
-/**
- * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
- * if value is a number.
- * Buffer.from(str[, encoding])
- * Buffer.from(array)
- * Buffer.from(buffer)
- * Buffer.from(arrayBuffer[, byteOffset[, length]])
- **/
-Buffer.from = function (value, encodingOrOffset, length) {
-  return from(value, encodingOrOffset, length)
-}
-
-// Note: Change prototype *after* Buffer.from is defined to workaround Chrome bug:
-// https://github.com/feross/buffer/pull/148
-Buffer.prototype.__proto__ = Uint8Array.prototype
-Buffer.__proto__ = Uint8Array
-
-function assertSize (size) {
-  if (typeof size !== 'number') {
-    throw new TypeError('"size" argument must be of type number')
-  } else if (size < 0) {
-    throw new RangeError('The value "' + size + '" is invalid for option "size"')
-  }
-}
-
-function alloc (size, fill, encoding) {
-  assertSize(size)
-  if (size <= 0) {
-    return createBuffer(size)
-  }
-  if (fill !== undefined) {
-    // Only pay attention to encoding if it's a string. This
-    // prevents accidentally sending in a number that would
-    // be interpretted as a start offset.
-    return typeof encoding === 'string'
-      ? createBuffer(size).fill(fill, encoding)
-      : createBuffer(size).fill(fill)
-  }
-  return createBuffer(size)
-}
-
-/**
- * Creates a new filled Buffer instance.
- * alloc(size[, fill[, encoding]])
- **/
-Buffer.alloc = function (size, fill, encoding) {
-  return alloc(size, fill, encoding)
-}
-
-function allocUnsafe (size) {
-  assertSize(size)
-  return createBuffer(size < 0 ? 0 : checked(size) | 0)
-}
-
-/**
- * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
- * */
-Buffer.allocUnsafe = function (size) {
-  return allocUnsafe(size)
-}
-/**
- * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
- */
-Buffer.allocUnsafeSlow = function (size) {
-  return allocUnsafe(size)
-}
-
-function fromString (string, encoding) {
-  if (typeof encoding !== 'string' || encoding === '') {
-    encoding = 'utf8'
-  }
-
-  if (!Buffer.isEncoding(encoding)) {
-    throw new TypeError('Unknown encoding: ' + encoding)
-  }
-
+  // Assumption: byteLength() return value is always < kMaxLength.
   var length = byteLength(string, encoding) | 0
-  var buf = createBuffer(length)
+  that = allocate(that, length)
 
-  var actual = buf.write(string, encoding)
-
-  if (actual !== length) {
-    // Writing a hex string, for example, that contains invalid characters will
-    // cause everything after the first invalid character to be ignored. (e.g.
-    // 'abxxcd' will be treated as 'ab')
-    buf = buf.slice(0, actual)
-  }
-
-  return buf
+  that.write(string, encoding)
+  return that
 }
 
-function fromArrayLike (array) {
-  var length = array.length < 0 ? 0 : checked(array.length) | 0
-  var buf = createBuffer(length)
+function fromObject (that, object) {
+  if (Buffer.isBuffer(object)) return fromBuffer(that, object)
+
+  if (isArray(object)) return fromArray(that, object)
+
+  if (object == null) {
+    throw new TypeError('must start with number, buffer, array or string')
+  }
+
+  if (typeof ArrayBuffer !== 'undefined') {
+    if (object.buffer instanceof ArrayBuffer) {
+      return fromTypedArray(that, object)
+    }
+    if (object instanceof ArrayBuffer) {
+      return fromArrayBuffer(that, object)
+    }
+  }
+
+  if (object.length) return fromArrayLike(that, object)
+
+  return fromJsonObject(that, object)
+}
+
+function fromBuffer (that, buffer) {
+  var length = checked(buffer.length) | 0
+  that = allocate(that, length)
+  buffer.copy(that, 0, 0, length)
+  return that
+}
+
+function fromArray (that, array) {
+  var length = checked(array.length) | 0
+  that = allocate(that, length)
   for (var i = 0; i < length; i += 1) {
-    buf[i] = array[i] & 255
+    that[i] = array[i] & 255
   }
-  return buf
+  return that
 }
 
-function fromArrayBuffer (array, byteOffset, length) {
-  if (byteOffset < 0 || array.byteLength < byteOffset) {
-    throw new RangeError('"offset" is outside of buffer bounds')
+// Duplicate of fromArray() to keep fromArray() monomorphic.
+function fromTypedArray (that, array) {
+  var length = checked(array.length) | 0
+  that = allocate(that, length)
+  // Truncating the elements is probably not what people expect from typed
+  // arrays with BYTES_PER_ELEMENT > 1 but it's compatible with the behavior
+  // of the old Buffer constructor.
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
   }
+  return that
+}
 
-  if (array.byteLength < byteOffset + (length || 0)) {
-    throw new RangeError('"length" is outside of buffer bounds')
-  }
-
-  var buf
-  if (byteOffset === undefined && length === undefined) {
-    buf = new Uint8Array(array)
-  } else if (length === undefined) {
-    buf = new Uint8Array(array, byteOffset)
+function fromArrayBuffer (that, array) {
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    array.byteLength
+    that = Buffer._augment(new Uint8Array(array))
   } else {
-    buf = new Uint8Array(array, byteOffset, length)
+    // Fallback: Return an object instance of the Buffer class
+    that = fromTypedArray(that, new Uint8Array(array))
   }
-
-  // Return an augmented `Uint8Array` instance
-  buf.__proto__ = Buffer.prototype
-  return buf
+  return that
 }
 
-function fromObject (obj) {
-  if (Buffer.isBuffer(obj)) {
-    var len = checked(obj.length) | 0
-    var buf = createBuffer(len)
+function fromArrayLike (that, array) {
+  var length = checked(array.length) | 0
+  that = allocate(that, length)
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
 
-    if (buf.length === 0) {
-      return buf
-    }
+// Deserialize { type: 'Buffer', data: [1,2,3,...] } into a Buffer object.
+// Returns a zero-length buffer for inputs that don't conform to the spec.
+function fromJsonObject (that, object) {
+  var array
+  var length = 0
 
-    obj.copy(buf, 0, 0, len)
-    return buf
+  if (object.type === 'Buffer' && isArray(object.data)) {
+    array = object.data
+    length = checked(array.length) | 0
+  }
+  that = allocate(that, length)
+
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+if (Buffer.TYPED_ARRAY_SUPPORT) {
+  Buffer.prototype.__proto__ = Uint8Array.prototype
+  Buffer.__proto__ = Uint8Array
+} else {
+  // pre-set for values that may exist in the future
+  Buffer.prototype.length = undefined
+  Buffer.prototype.parent = undefined
+}
+
+function allocate (that, length) {
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = Buffer._augment(new Uint8Array(length))
+    that.__proto__ = Buffer.prototype
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    that.length = length
+    that._isBuffer = true
   }
 
-  if (obj.length !== undefined) {
-    if (typeof obj.length !== 'number' || numberIsNaN(obj.length)) {
-      return createBuffer(0)
-    }
-    return fromArrayLike(obj)
-  }
+  var fromPool = length !== 0 && length <= Buffer.poolSize >>> 1
+  if (fromPool) that.parent = rootParent
 
-  if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
-    return fromArrayLike(obj.data)
-  }
+  return that
 }
 
 function checked (length) {
-  // Note: cannot use `length < K_MAX_LENGTH` here because that fails when
+  // Note: cannot use `length < kMaxLength` here because that fails when
   // length is NaN (which is otherwise coerced to zero.)
-  if (length >= K_MAX_LENGTH) {
+  if (length >= kMaxLength()) {
     throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
-                         'size: 0x' + K_MAX_LENGTH.toString(16) + ' bytes')
+                         'size: 0x' + kMaxLength().toString(16) + ' bytes')
   }
   return length | 0
 }
 
-function SlowBuffer (length) {
-  if (+length != length) { // eslint-disable-line eqeqeq
-    length = 0
-  }
-  return Buffer.alloc(+length)
+function SlowBuffer (subject, encoding) {
+  if (!(this instanceof SlowBuffer)) return new SlowBuffer(subject, encoding)
+
+  var buf = new Buffer(subject, encoding)
+  delete buf.parent
+  return buf
 }
 
 Buffer.isBuffer = function isBuffer (b) {
-  return b != null && b._isBuffer === true &&
-    b !== Buffer.prototype // so Buffer.isBuffer(Buffer.prototype) will be false
+  return !!(b != null && b._isBuffer)
 }
 
 Buffer.compare = function compare (a, b) {
-  if (isInstance(a, Uint8Array)) a = Buffer.from(a, a.offset, a.byteLength)
-  if (isInstance(b, Uint8Array)) b = Buffer.from(b, b.offset, b.byteLength)
   if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
-    throw new TypeError(
-      'The "buf1", "buf2" arguments must be one of type Buffer or Uint8Array'
-    )
+    throw new TypeError('Arguments must be Buffers')
   }
 
   if (a === b) return 0
@@ -504,12 +410,17 @@ Buffer.compare = function compare (a, b) {
   var x = a.length
   var y = b.length
 
-  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
-    if (a[i] !== b[i]) {
-      x = a[i]
-      y = b[i]
-      break
-    }
+  var i = 0
+  var len = Math.min(x, y)
+  while (i < len) {
+    if (a[i] !== b[i]) break
+
+    ++i
+  }
+
+  if (i !== len) {
+    x = a[i]
+    y = b[i]
   }
 
   if (x < y) return -1
@@ -523,9 +434,9 @@ Buffer.isEncoding = function isEncoding (encoding) {
     case 'utf8':
     case 'utf-8':
     case 'ascii':
-    case 'latin1':
     case 'binary':
     case 'base64':
+    case 'raw':
     case 'ucs2':
     case 'ucs-2':
     case 'utf16le':
@@ -537,63 +448,45 @@ Buffer.isEncoding = function isEncoding (encoding) {
 }
 
 Buffer.concat = function concat (list, length) {
-  if (!Array.isArray(list)) {
-    throw new TypeError('"list" argument must be an Array of Buffers')
-  }
+  if (!isArray(list)) throw new TypeError('list argument must be an Array of Buffers.')
 
   if (list.length === 0) {
-    return Buffer.alloc(0)
+    return new Buffer(0)
   }
 
   var i
   if (length === undefined) {
     length = 0
-    for (i = 0; i < list.length; ++i) {
+    for (i = 0; i < list.length; i++) {
       length += list[i].length
     }
   }
 
-  var buffer = Buffer.allocUnsafe(length)
+  var buf = new Buffer(length)
   var pos = 0
-  for (i = 0; i < list.length; ++i) {
-    var buf = list[i]
-    if (isInstance(buf, Uint8Array)) {
-      buf = Buffer.from(buf)
-    }
-    if (!Buffer.isBuffer(buf)) {
-      throw new TypeError('"list" argument must be an Array of Buffers')
-    }
-    buf.copy(buffer, pos)
-    pos += buf.length
+  for (i = 0; i < list.length; i++) {
+    var item = list[i]
+    item.copy(buf, pos)
+    pos += item.length
   }
-  return buffer
+  return buf
 }
 
 function byteLength (string, encoding) {
-  if (Buffer.isBuffer(string)) {
-    return string.length
-  }
-  if (ArrayBuffer.isView(string) || isInstance(string, ArrayBuffer)) {
-    return string.byteLength
-  }
-  if (typeof string !== 'string') {
-    throw new TypeError(
-      'The "string" argument must be one of type string, Buffer, or ArrayBuffer. ' +
-      'Received type ' + typeof string
-    )
-  }
+  if (typeof string !== 'string') string = '' + string
 
   var len = string.length
-  var mustMatch = (arguments.length > 2 && arguments[2] === true)
-  if (!mustMatch && len === 0) return 0
+  if (len === 0) return 0
 
   // Use a for loop to avoid recursion
   var loweredCase = false
   for (;;) {
     switch (encoding) {
       case 'ascii':
-      case 'latin1':
       case 'binary':
+      // Deprecated
+      case 'raw':
+      case 'raws':
         return len
       case 'utf8':
       case 'utf-8':
@@ -608,9 +501,7 @@ function byteLength (string, encoding) {
       case 'base64':
         return base64ToBytes(string).length
       default:
-        if (loweredCase) {
-          return mustMatch ? -1 : utf8ToBytes(string).length // assume utf8
-        }
+        if (loweredCase) return utf8ToBytes(string).length // assume utf8
         encoding = ('' + encoding).toLowerCase()
         loweredCase = true
     }
@@ -621,39 +512,13 @@ Buffer.byteLength = byteLength
 function slowToString (encoding, start, end) {
   var loweredCase = false
 
-  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
-  // property of a typed array.
-
-  // This behaves neither like String nor Uint8Array in that we set start/end
-  // to their upper/lower bounds if the value passed is out of range.
-  // undefined is handled specially as per ECMA-262 6th Edition,
-  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
-  if (start === undefined || start < 0) {
-    start = 0
-  }
-  // Return early if start > this.length. Done here to prevent potential uint32
-  // coercion fail below.
-  if (start > this.length) {
-    return ''
-  }
-
-  if (end === undefined || end > this.length) {
-    end = this.length
-  }
-
-  if (end <= 0) {
-    return ''
-  }
-
-  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
-  end >>>= 0
-  start >>>= 0
-
-  if (end <= start) {
-    return ''
-  }
+  start = start | 0
+  end = end === undefined || end === Infinity ? this.length : end | 0
 
   if (!encoding) encoding = 'utf8'
+  if (start < 0) start = 0
+  if (end > this.length) end = this.length
+  if (end <= start) return ''
 
   while (true) {
     switch (encoding) {
@@ -667,9 +532,8 @@ function slowToString (encoding, start, end) {
       case 'ascii':
         return asciiSlice(this, start, end)
 
-      case 'latin1':
       case 'binary':
-        return latin1Slice(this, start, end)
+        return binarySlice(this, start, end)
 
       case 'base64':
         return base64Slice(this, start, end)
@@ -688,65 +552,12 @@ function slowToString (encoding, start, end) {
   }
 }
 
-// This property is used by `Buffer.isBuffer` (and the `is-buffer` npm package)
-// to detect a Buffer instance. It's not possible to use `instanceof Buffer`
-// reliably in a browserify context because there could be multiple different
-// copies of the 'buffer' package in use. This method works even for Buffer
-// instances that were created from another copy of the `buffer` package.
-// See: https://github.com/feross/buffer/issues/154
-Buffer.prototype._isBuffer = true
-
-function swap (b, n, m) {
-  var i = b[n]
-  b[n] = b[m]
-  b[m] = i
-}
-
-Buffer.prototype.swap16 = function swap16 () {
-  var len = this.length
-  if (len % 2 !== 0) {
-    throw new RangeError('Buffer size must be a multiple of 16-bits')
-  }
-  for (var i = 0; i < len; i += 2) {
-    swap(this, i, i + 1)
-  }
-  return this
-}
-
-Buffer.prototype.swap32 = function swap32 () {
-  var len = this.length
-  if (len % 4 !== 0) {
-    throw new RangeError('Buffer size must be a multiple of 32-bits')
-  }
-  for (var i = 0; i < len; i += 4) {
-    swap(this, i, i + 3)
-    swap(this, i + 1, i + 2)
-  }
-  return this
-}
-
-Buffer.prototype.swap64 = function swap64 () {
-  var len = this.length
-  if (len % 8 !== 0) {
-    throw new RangeError('Buffer size must be a multiple of 64-bits')
-  }
-  for (var i = 0; i < len; i += 8) {
-    swap(this, i, i + 7)
-    swap(this, i + 1, i + 6)
-    swap(this, i + 2, i + 5)
-    swap(this, i + 3, i + 4)
-  }
-  return this
-}
-
 Buffer.prototype.toString = function toString () {
-  var length = this.length
+  var length = this.length | 0
   if (length === 0) return ''
   if (arguments.length === 0) return utf8Slice(this, 0, length)
   return slowToString.apply(this, arguments)
 }
-
-Buffer.prototype.toLocaleString = Buffer.prototype.toString
 
 Buffer.prototype.equals = function equals (b) {
   if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
@@ -757,207 +568,70 @@ Buffer.prototype.equals = function equals (b) {
 Buffer.prototype.inspect = function inspect () {
   var str = ''
   var max = exports.INSPECT_MAX_BYTES
-  str = this.toString('hex', 0, max).replace(/(.{2})/g, '$1 ').trim()
-  if (this.length > max) str += ' ... '
+  if (this.length > 0) {
+    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
+    if (this.length > max) str += ' ... '
+  }
   return '<Buffer ' + str + '>'
 }
 
-Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
-  if (isInstance(target, Uint8Array)) {
-    target = Buffer.from(target, target.offset, target.byteLength)
-  }
-  if (!Buffer.isBuffer(target)) {
-    throw new TypeError(
-      'The "target" argument must be one of type Buffer or Uint8Array. ' +
-      'Received type ' + (typeof target)
-    )
-  }
-
-  if (start === undefined) {
-    start = 0
-  }
-  if (end === undefined) {
-    end = target ? target.length : 0
-  }
-  if (thisStart === undefined) {
-    thisStart = 0
-  }
-  if (thisEnd === undefined) {
-    thisEnd = this.length
-  }
-
-  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
-    throw new RangeError('out of range index')
-  }
-
-  if (thisStart >= thisEnd && start >= end) {
-    return 0
-  }
-  if (thisStart >= thisEnd) {
-    return -1
-  }
-  if (start >= end) {
-    return 1
-  }
-
-  start >>>= 0
-  end >>>= 0
-  thisStart >>>= 0
-  thisEnd >>>= 0
-
-  if (this === target) return 0
-
-  var x = thisEnd - thisStart
-  var y = end - start
-  var len = Math.min(x, y)
-
-  var thisCopy = this.slice(thisStart, thisEnd)
-  var targetCopy = target.slice(start, end)
-
-  for (var i = 0; i < len; ++i) {
-    if (thisCopy[i] !== targetCopy[i]) {
-      x = thisCopy[i]
-      y = targetCopy[i]
-      break
-    }
-  }
-
-  if (x < y) return -1
-  if (y < x) return 1
-  return 0
+Buffer.prototype.compare = function compare (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return 0
+  return Buffer.compare(this, b)
 }
 
-// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
-// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
-//
-// Arguments:
-// - buffer - a Buffer to search
-// - val - a string, Buffer, or number
-// - byteOffset - an index into `buffer`; will be clamped to an int32
-// - encoding - an optional encoding, relevant is val is a string
-// - dir - true for indexOf, false for lastIndexOf
-function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
-  // Empty buffer means no match
-  if (buffer.length === 0) return -1
+Buffer.prototype.indexOf = function indexOf (val, byteOffset) {
+  if (byteOffset > 0x7fffffff) byteOffset = 0x7fffffff
+  else if (byteOffset < -0x80000000) byteOffset = -0x80000000
+  byteOffset >>= 0
 
-  // Normalize byteOffset
-  if (typeof byteOffset === 'string') {
-    encoding = byteOffset
-    byteOffset = 0
-  } else if (byteOffset > 0x7fffffff) {
-    byteOffset = 0x7fffffff
-  } else if (byteOffset < -0x80000000) {
-    byteOffset = -0x80000000
-  }
-  byteOffset = +byteOffset // Coerce to Number.
-  if (numberIsNaN(byteOffset)) {
-    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
-    byteOffset = dir ? 0 : (buffer.length - 1)
-  }
+  if (this.length === 0) return -1
+  if (byteOffset >= this.length) return -1
 
-  // Normalize byteOffset: negative offsets start from the end of the buffer
-  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
-  if (byteOffset >= buffer.length) {
-    if (dir) return -1
-    else byteOffset = buffer.length - 1
-  } else if (byteOffset < 0) {
-    if (dir) byteOffset = 0
-    else return -1
-  }
+  // Negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = Math.max(this.length + byteOffset, 0)
 
-  // Normalize val
   if (typeof val === 'string') {
-    val = Buffer.from(val, encoding)
+    if (val.length === 0) return -1 // special case: looking for empty string always fails
+    return String.prototype.indexOf.call(this, val, byteOffset)
+  }
+  if (Buffer.isBuffer(val)) {
+    return arrayIndexOf(this, val, byteOffset)
+  }
+  if (typeof val === 'number') {
+    if (Buffer.TYPED_ARRAY_SUPPORT && Uint8Array.prototype.indexOf === 'function') {
+      return Uint8Array.prototype.indexOf.call(this, val, byteOffset)
+    }
+    return arrayIndexOf(this, [ val ], byteOffset)
   }
 
-  // Finally, search either indexOf (if dir is true) or lastIndexOf
-  if (Buffer.isBuffer(val)) {
-    // Special case: looking for empty string/buffer always fails
-    if (val.length === 0) {
-      return -1
-    }
-    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
-  } else if (typeof val === 'number') {
-    val = val & 0xFF // Search for a byte value [0-255]
-    if (typeof Uint8Array.prototype.indexOf === 'function') {
-      if (dir) {
-        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+  function arrayIndexOf (arr, val, byteOffset) {
+    var foundIndex = -1
+    for (var i = 0; byteOffset + i < arr.length; i++) {
+      if (arr[byteOffset + i] === val[foundIndex === -1 ? 0 : i - foundIndex]) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === val.length) return byteOffset + foundIndex
       } else {
-        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+        foundIndex = -1
       }
     }
-    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
+    return -1
   }
 
   throw new TypeError('val must be string, number or Buffer')
 }
 
-function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
-  var indexSize = 1
-  var arrLength = arr.length
-  var valLength = val.length
-
-  if (encoding !== undefined) {
-    encoding = String(encoding).toLowerCase()
-    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
-        encoding === 'utf16le' || encoding === 'utf-16le') {
-      if (arr.length < 2 || val.length < 2) {
-        return -1
-      }
-      indexSize = 2
-      arrLength /= 2
-      valLength /= 2
-      byteOffset /= 2
-    }
-  }
-
-  function read (buf, i) {
-    if (indexSize === 1) {
-      return buf[i]
-    } else {
-      return buf.readUInt16BE(i * indexSize)
-    }
-  }
-
-  var i
-  if (dir) {
-    var foundIndex = -1
-    for (i = byteOffset; i < arrLength; i++) {
-      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
-        if (foundIndex === -1) foundIndex = i
-        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
-      } else {
-        if (foundIndex !== -1) i -= i - foundIndex
-        foundIndex = -1
-      }
-    }
-  } else {
-    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
-    for (i = byteOffset; i >= 0; i--) {
-      var found = true
-      for (var j = 0; j < valLength; j++) {
-        if (read(arr, i + j) !== read(val, j)) {
-          found = false
-          break
-        }
-      }
-      if (found) return i
-    }
-  }
-
-  return -1
+// `get` is deprecated
+Buffer.prototype.get = function get (offset) {
+  console.log('.get() is deprecated. Access using array indexes instead.')
+  return this.readUInt8(offset)
 }
 
-Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
-  return this.indexOf(val, byteOffset, encoding) !== -1
-}
-
-Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
-  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
-}
-
-Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
-  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+// `set` is deprecated
+Buffer.prototype.set = function set (v, offset) {
+  console.log('.set() is deprecated. Access using array indexes instead.')
+  return this.writeUInt8(v, offset)
 }
 
 function hexWrite (buf, string, offset, length) {
@@ -972,14 +646,16 @@ function hexWrite (buf, string, offset, length) {
     }
   }
 
+  // must be an even number of digits
   var strLen = string.length
+  if (strLen % 2 !== 0) throw new Error('Invalid hex string')
 
   if (length > strLen / 2) {
     length = strLen / 2
   }
-  for (var i = 0; i < length; ++i) {
+  for (var i = 0; i < length; i++) {
     var parsed = parseInt(string.substr(i * 2, 2), 16)
-    if (numberIsNaN(parsed)) return i
+    if (isNaN(parsed)) throw new Error('Invalid hex string')
     buf[offset + i] = parsed
   }
   return i
@@ -993,7 +669,7 @@ function asciiWrite (buf, string, offset, length) {
   return blitBuffer(asciiToBytes(string), buf, offset, length)
 }
 
-function latin1Write (buf, string, offset, length) {
+function binaryWrite (buf, string, offset, length) {
   return asciiWrite(buf, string, offset, length)
 }
 
@@ -1018,25 +694,27 @@ Buffer.prototype.write = function write (string, offset, length, encoding) {
     offset = 0
   // Buffer#write(string, offset[, length][, encoding])
   } else if (isFinite(offset)) {
-    offset = offset >>> 0
+    offset = offset | 0
     if (isFinite(length)) {
-      length = length >>> 0
+      length = length | 0
       if (encoding === undefined) encoding = 'utf8'
     } else {
       encoding = length
       length = undefined
     }
+  // legacy write(string, encoding, offset, length) - remove in v0.13
   } else {
-    throw new Error(
-      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
-    )
+    var swap = encoding
+    encoding = offset
+    offset = length | 0
+    length = swap
   }
 
   var remaining = this.length - offset
   if (length === undefined || length > remaining) length = remaining
 
   if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
-    throw new RangeError('Attempt to write outside buffer bounds')
+    throw new RangeError('attempt to write outside buffer bounds')
   }
 
   if (!encoding) encoding = 'utf8'
@@ -1054,9 +732,8 @@ Buffer.prototype.write = function write (string, offset, length, encoding) {
       case 'ascii':
         return asciiWrite(this, string, offset, length)
 
-      case 'latin1':
       case 'binary':
-        return latin1Write(this, string, offset, length)
+        return binaryWrite(this, string, offset, length)
 
       case 'base64':
         // Warning: maxLength not taken into account in base64Write
@@ -1101,8 +778,8 @@ function utf8Slice (buf, start, end) {
     var codePoint = null
     var bytesPerSequence = (firstByte > 0xEF) ? 4
       : (firstByte > 0xDF) ? 3
-        : (firstByte > 0xBF) ? 2
-          : 1
+      : (firstByte > 0xBF) ? 2
+      : 1
 
     if (i + bytesPerSequence <= end) {
       var secondByte, thirdByte, fourthByte, tempCodePoint
@@ -1191,17 +868,17 @@ function asciiSlice (buf, start, end) {
   var ret = ''
   end = Math.min(buf.length, end)
 
-  for (var i = start; i < end; ++i) {
+  for (var i = start; i < end; i++) {
     ret += String.fromCharCode(buf[i] & 0x7F)
   }
   return ret
 }
 
-function latin1Slice (buf, start, end) {
+function binarySlice (buf, start, end) {
   var ret = ''
   end = Math.min(buf.length, end)
 
-  for (var i = start; i < end; ++i) {
+  for (var i = start; i < end; i++) {
     ret += String.fromCharCode(buf[i])
   }
   return ret
@@ -1214,7 +891,7 @@ function hexSlice (buf, start, end) {
   if (!end || end < 0 || end > len) end = len
 
   var out = ''
-  for (var i = start; i < end; ++i) {
+  for (var i = start; i < end; i++) {
     out += toHex(buf[i])
   }
   return out
@@ -1224,7 +901,7 @@ function utf16leSlice (buf, start, end) {
   var bytes = buf.slice(start, end)
   var res = ''
   for (var i = 0; i < bytes.length; i += 2) {
-    res += String.fromCharCode(bytes[i] + (bytes[i + 1] * 256))
+    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256)
   }
   return res
 }
@@ -1250,9 +927,19 @@ Buffer.prototype.slice = function slice (start, end) {
 
   if (end < start) end = start
 
-  var newBuf = this.subarray(start, end)
-  // Return an augmented `Uint8Array` instance
-  newBuf.__proto__ = Buffer.prototype
+  var newBuf
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    newBuf = Buffer._augment(this.subarray(start, end))
+  } else {
+    var sliceLen = end - start
+    newBuf = new Buffer(sliceLen, undefined)
+    for (var i = 0; i < sliceLen; i++) {
+      newBuf[i] = this[i + start]
+    }
+  }
+
+  if (newBuf.length) newBuf.parent = this.parent || this
+
   return newBuf
 }
 
@@ -1265,8 +952,8 @@ function checkOffset (offset, ext, length) {
 }
 
 Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
-  offset = offset >>> 0
-  byteLength = byteLength >>> 0
+  offset = offset | 0
+  byteLength = byteLength | 0
   if (!noAssert) checkOffset(offset, byteLength, this.length)
 
   var val = this[offset]
@@ -1280,8 +967,8 @@ Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert)
 }
 
 Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
-  offset = offset >>> 0
-  byteLength = byteLength >>> 0
+  offset = offset | 0
+  byteLength = byteLength | 0
   if (!noAssert) {
     checkOffset(offset, byteLength, this.length)
   }
@@ -1296,25 +983,21 @@ Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert)
 }
 
 Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 1, this.length)
   return this[offset]
 }
 
 Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 2, this.length)
   return this[offset] | (this[offset + 1] << 8)
 }
 
 Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 2, this.length)
   return (this[offset] << 8) | this[offset + 1]
 }
 
 Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 4, this.length)
 
   return ((this[offset]) |
@@ -1324,7 +1007,6 @@ Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
 }
 
 Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 4, this.length)
 
   return (this[offset] * 0x1000000) +
@@ -1334,8 +1016,8 @@ Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
 }
 
 Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
-  offset = offset >>> 0
-  byteLength = byteLength >>> 0
+  offset = offset | 0
+  byteLength = byteLength | 0
   if (!noAssert) checkOffset(offset, byteLength, this.length)
 
   var val = this[offset]
@@ -1352,8 +1034,8 @@ Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
 }
 
 Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
-  offset = offset >>> 0
-  byteLength = byteLength >>> 0
+  offset = offset | 0
+  byteLength = byteLength | 0
   if (!noAssert) checkOffset(offset, byteLength, this.length)
 
   var i = byteLength
@@ -1370,28 +1052,24 @@ Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
 }
 
 Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 1, this.length)
   if (!(this[offset] & 0x80)) return (this[offset])
   return ((0xff - this[offset] + 1) * -1)
 }
 
 Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 2, this.length)
   var val = this[offset] | (this[offset + 1] << 8)
   return (val & 0x8000) ? val | 0xFFFF0000 : val
 }
 
 Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 2, this.length)
   var val = this[offset + 1] | (this[offset] << 8)
   return (val & 0x8000) ? val | 0xFFFF0000 : val
 }
 
 Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 4, this.length)
 
   return (this[offset]) |
@@ -1401,7 +1079,6 @@ Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
 }
 
 Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 4, this.length)
 
   return (this[offset] << 24) |
@@ -1411,43 +1088,36 @@ Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
 }
 
 Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 4, this.length)
   return ieee754.read(this, offset, true, 23, 4)
 }
 
 Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 4, this.length)
   return ieee754.read(this, offset, false, 23, 4)
 }
 
 Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 8, this.length)
   return ieee754.read(this, offset, true, 52, 8)
 }
 
 Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
-  offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 8, this.length)
   return ieee754.read(this, offset, false, 52, 8)
 }
 
 function checkInt (buf, value, offset, ext, max, min) {
-  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
-  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
-  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+  if (!Buffer.isBuffer(buf)) throw new TypeError('buffer must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('value is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('index out of range')
 }
 
 Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
   value = +value
-  offset = offset >>> 0
-  byteLength = byteLength >>> 0
-  if (!noAssert) {
-    var maxBytes = Math.pow(2, 8 * byteLength) - 1
-    checkInt(this, value, offset, byteLength, maxBytes, 0)
-  }
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
 
   var mul = 1
   var i = 0
@@ -1461,12 +1131,9 @@ Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, 
 
 Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
   value = +value
-  offset = offset >>> 0
-  byteLength = byteLength >>> 0
-  if (!noAssert) {
-    var maxBytes = Math.pow(2, 8 * byteLength) - 1
-    checkInt(this, value, offset, byteLength, maxBytes, 0)
-  }
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
 
   var i = byteLength - 1
   var mul = 1
@@ -1480,69 +1147,98 @@ Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, 
 
 Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
   this[offset] = (value & 0xff)
   return offset + 1
 }
 
+function objectWriteUInt16 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; i++) {
+    buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
+      (littleEndian ? i : 1 - i) * 8
+  }
+}
+
 Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
-  this[offset] = (value & 0xff)
-  this[offset + 1] = (value >>> 8)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
   return offset + 2
 }
 
 Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
-  this[offset] = (value >>> 8)
-  this[offset + 1] = (value & 0xff)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
   return offset + 2
+}
+
+function objectWriteUInt32 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffffffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; i++) {
+    buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
+  }
 }
 
 Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
-  this[offset + 3] = (value >>> 24)
-  this[offset + 2] = (value >>> 16)
-  this[offset + 1] = (value >>> 8)
-  this[offset] = (value & 0xff)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset + 3] = (value >>> 24)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 1] = (value >>> 8)
+    this[offset] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
   return offset + 4
 }
 
 Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
-  this[offset] = (value >>> 24)
-  this[offset + 1] = (value >>> 16)
-  this[offset + 2] = (value >>> 8)
-  this[offset + 3] = (value & 0xff)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
   return offset + 4
 }
 
 Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) {
-    var limit = Math.pow(2, (8 * byteLength) - 1)
+    var limit = Math.pow(2, 8 * byteLength - 1)
 
     checkInt(this, value, offset, byteLength, limit - 1, -limit)
   }
 
   var i = 0
   var mul = 1
-  var sub = 0
+  var sub = value < 0 ? 1 : 0
   this[offset] = value & 0xFF
   while (++i < byteLength && (mul *= 0x100)) {
-    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
-      sub = 1
-    }
     this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
   }
 
@@ -1551,21 +1247,18 @@ Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, no
 
 Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) {
-    var limit = Math.pow(2, (8 * byteLength) - 1)
+    var limit = Math.pow(2, 8 * byteLength - 1)
 
     checkInt(this, value, offset, byteLength, limit - 1, -limit)
   }
 
   var i = byteLength - 1
   var mul = 1
-  var sub = 0
+  var sub = value < 0 ? 1 : 0
   this[offset + i] = value & 0xFF
   while (--i >= 0 && (mul *= 0x100)) {
-    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
-      sub = 1
-    }
     this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
   }
 
@@ -1574,8 +1267,9 @@ Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, no
 
 Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
   if (value < 0) value = 0xff + value + 1
   this[offset] = (value & 0xff)
   return offset + 1
@@ -1583,53 +1277,68 @@ Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
 
 Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
-  this[offset] = (value & 0xff)
-  this[offset + 1] = (value >>> 8)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
   return offset + 2
 }
 
 Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
-  this[offset] = (value >>> 8)
-  this[offset + 1] = (value & 0xff)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
   return offset + 2
 }
 
 Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
-  this[offset] = (value & 0xff)
-  this[offset + 1] = (value >>> 8)
-  this[offset + 2] = (value >>> 16)
-  this[offset + 3] = (value >>> 24)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 3] = (value >>> 24)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
   return offset + 4
 }
 
 Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
   value = +value
-  offset = offset >>> 0
+  offset = offset | 0
   if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
   if (value < 0) value = 0xffffffff + value + 1
-  this[offset] = (value >>> 24)
-  this[offset + 1] = (value >>> 16)
-  this[offset + 2] = (value >>> 8)
-  this[offset + 3] = (value & 0xff)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
   return offset + 4
 }
 
 function checkIEEE754 (buf, value, offset, ext, max, min) {
-  if (offset + ext > buf.length) throw new RangeError('Index out of range')
-  if (offset < 0) throw new RangeError('Index out of range')
+  if (value > max || value < min) throw new RangeError('value is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('index out of range')
+  if (offset < 0) throw new RangeError('index out of range')
 }
 
 function writeFloat (buf, value, offset, littleEndian, noAssert) {
-  value = +value
-  offset = offset >>> 0
   if (!noAssert) {
     checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
   }
@@ -1646,8 +1355,6 @@ Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) 
 }
 
 function writeDouble (buf, value, offset, littleEndian, noAssert) {
-  value = +value
-  offset = offset >>> 0
   if (!noAssert) {
     checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
   }
@@ -1665,7 +1372,6 @@ Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert
 
 // copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
 Buffer.prototype.copy = function copy (target, targetStart, start, end) {
-  if (!Buffer.isBuffer(target)) throw new TypeError('argument should be a Buffer')
   if (!start) start = 0
   if (!end && end !== 0) end = this.length
   if (targetStart >= target.length) targetStart = target.length
@@ -1680,7 +1386,7 @@ Buffer.prototype.copy = function copy (target, targetStart, start, end) {
   if (targetStart < 0) {
     throw new RangeError('targetStart out of bounds')
   }
-  if (start < 0 || start >= this.length) throw new RangeError('Index out of range')
+  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
   if (end < 0) throw new RangeError('sourceEnd out of bounds')
 
   // Are we oob?
@@ -1690,105 +1396,152 @@ Buffer.prototype.copy = function copy (target, targetStart, start, end) {
   }
 
   var len = end - start
+  var i
 
-  if (this === target && typeof Uint8Array.prototype.copyWithin === 'function') {
-    // Use built-in when available, missing from IE11
-    this.copyWithin(targetStart, start, end)
-  } else if (this === target && start < targetStart && targetStart < end) {
+  if (this === target && start < targetStart && targetStart < end) {
     // descending copy from end
-    for (var i = len - 1; i >= 0; --i) {
+    for (i = len - 1; i >= 0; i--) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
+    // ascending copy from start
+    for (i = 0; i < len; i++) {
       target[i + targetStart] = this[i + start]
     }
   } else {
-    Uint8Array.prototype.set.call(
-      target,
-      this.subarray(start, end),
-      targetStart
-    )
+    target._set(this.subarray(start, start + len), targetStart)
   }
 
   return len
 }
 
-// Usage:
-//    buffer.fill(number[, offset[, end]])
-//    buffer.fill(buffer[, offset[, end]])
-//    buffer.fill(string[, offset[, end]][, encoding])
-Buffer.prototype.fill = function fill (val, start, end, encoding) {
-  // Handle string cases:
-  if (typeof val === 'string') {
-    if (typeof start === 'string') {
-      encoding = start
-      start = 0
-      end = this.length
-    } else if (typeof end === 'string') {
-      encoding = end
-      end = this.length
-    }
-    if (encoding !== undefined && typeof encoding !== 'string') {
-      throw new TypeError('encoding must be a string')
-    }
-    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
-      throw new TypeError('Unknown encoding: ' + encoding)
-    }
-    if (val.length === 1) {
-      var code = val.charCodeAt(0)
-      if ((encoding === 'utf8' && code < 128) ||
-          encoding === 'latin1') {
-        // Fast path: If `val` fits into a single byte, use that numeric value.
-        val = code
-      }
-    }
-  } else if (typeof val === 'number') {
-    val = val & 255
-  }
+// fill(value, start=0, end=buffer.length)
+Buffer.prototype.fill = function fill (value, start, end) {
+  if (!value) value = 0
+  if (!start) start = 0
+  if (!end) end = this.length
 
-  // Invalid ranges are not set to a default, so can range check early.
-  if (start < 0 || this.length < start || this.length < end) {
-    throw new RangeError('Out of range index')
-  }
+  if (end < start) throw new RangeError('end < start')
 
-  if (end <= start) {
-    return this
-  }
+  // Fill 0 bytes; we're done
+  if (end === start) return
+  if (this.length === 0) return
 
-  start = start >>> 0
-  end = end === undefined ? this.length : end >>> 0
-
-  if (!val) val = 0
+  if (start < 0 || start >= this.length) throw new RangeError('start out of bounds')
+  if (end < 0 || end > this.length) throw new RangeError('end out of bounds')
 
   var i
-  if (typeof val === 'number') {
-    for (i = start; i < end; ++i) {
-      this[i] = val
+  if (typeof value === 'number') {
+    for (i = start; i < end; i++) {
+      this[i] = value
     }
   } else {
-    var bytes = Buffer.isBuffer(val)
-      ? val
-      : Buffer.from(val, encoding)
+    var bytes = utf8ToBytes(value.toString())
     var len = bytes.length
-    if (len === 0) {
-      throw new TypeError('The value "' + val +
-        '" is invalid for argument "value"')
-    }
-    for (i = 0; i < end - start; ++i) {
-      this[i + start] = bytes[i % len]
+    for (i = start; i < end; i++) {
+      this[i] = bytes[i % len]
     }
   }
 
   return this
 }
 
+/**
+ * Creates a new `ArrayBuffer` with the *copied* memory of the buffer instance.
+ * Added in Node 0.12. Only available in browsers that support ArrayBuffer.
+ */
+Buffer.prototype.toArrayBuffer = function toArrayBuffer () {
+  if (typeof Uint8Array !== 'undefined') {
+    if (Buffer.TYPED_ARRAY_SUPPORT) {
+      return (new Buffer(this)).buffer
+    } else {
+      var buf = new Uint8Array(this.length)
+      for (var i = 0, len = buf.length; i < len; i += 1) {
+        buf[i] = this[i]
+      }
+      return buf.buffer
+    }
+  } else {
+    throw new TypeError('Buffer.toArrayBuffer not supported in this browser')
+  }
+}
+
 // HELPER FUNCTIONS
 // ================
 
-var INVALID_BASE64_RE = /[^+/0-9A-Za-z-_]/g
+var BP = Buffer.prototype
+
+/**
+ * Augment a Uint8Array *instance* (not the Uint8Array class!) with Buffer methods
+ */
+Buffer._augment = function _augment (arr) {
+  arr.constructor = Buffer
+  arr._isBuffer = true
+
+  // save reference to original Uint8Array set method before overwriting
+  arr._set = arr.set
+
+  // deprecated
+  arr.get = BP.get
+  arr.set = BP.set
+
+  arr.write = BP.write
+  arr.toString = BP.toString
+  arr.toLocaleString = BP.toString
+  arr.toJSON = BP.toJSON
+  arr.equals = BP.equals
+  arr.compare = BP.compare
+  arr.indexOf = BP.indexOf
+  arr.copy = BP.copy
+  arr.slice = BP.slice
+  arr.readUIntLE = BP.readUIntLE
+  arr.readUIntBE = BP.readUIntBE
+  arr.readUInt8 = BP.readUInt8
+  arr.readUInt16LE = BP.readUInt16LE
+  arr.readUInt16BE = BP.readUInt16BE
+  arr.readUInt32LE = BP.readUInt32LE
+  arr.readUInt32BE = BP.readUInt32BE
+  arr.readIntLE = BP.readIntLE
+  arr.readIntBE = BP.readIntBE
+  arr.readInt8 = BP.readInt8
+  arr.readInt16LE = BP.readInt16LE
+  arr.readInt16BE = BP.readInt16BE
+  arr.readInt32LE = BP.readInt32LE
+  arr.readInt32BE = BP.readInt32BE
+  arr.readFloatLE = BP.readFloatLE
+  arr.readFloatBE = BP.readFloatBE
+  arr.readDoubleLE = BP.readDoubleLE
+  arr.readDoubleBE = BP.readDoubleBE
+  arr.writeUInt8 = BP.writeUInt8
+  arr.writeUIntLE = BP.writeUIntLE
+  arr.writeUIntBE = BP.writeUIntBE
+  arr.writeUInt16LE = BP.writeUInt16LE
+  arr.writeUInt16BE = BP.writeUInt16BE
+  arr.writeUInt32LE = BP.writeUInt32LE
+  arr.writeUInt32BE = BP.writeUInt32BE
+  arr.writeIntLE = BP.writeIntLE
+  arr.writeIntBE = BP.writeIntBE
+  arr.writeInt8 = BP.writeInt8
+  arr.writeInt16LE = BP.writeInt16LE
+  arr.writeInt16BE = BP.writeInt16BE
+  arr.writeInt32LE = BP.writeInt32LE
+  arr.writeInt32BE = BP.writeInt32BE
+  arr.writeFloatLE = BP.writeFloatLE
+  arr.writeFloatBE = BP.writeFloatBE
+  arr.writeDoubleLE = BP.writeDoubleLE
+  arr.writeDoubleBE = BP.writeDoubleBE
+  arr.fill = BP.fill
+  arr.inspect = BP.inspect
+  arr.toArrayBuffer = BP.toArrayBuffer
+
+  return arr
+}
+
+var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g
 
 function base64clean (str) {
-  // Node takes equal signs as end of the Base64 encoding
-  str = str.split('=')[0]
   // Node strips out invalid characters like \n and \t from the string, base64-js does not
-  str = str.trim().replace(INVALID_BASE64_RE, '')
+  str = stringtrim(str).replace(INVALID_BASE64_RE, '')
   // Node converts strings with length < 2 to ''
   if (str.length < 2) return ''
   // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
@@ -1796,6 +1549,11 @@ function base64clean (str) {
     str = str + '='
   }
   return str
+}
+
+function stringtrim (str) {
+  if (str.trim) return str.trim()
+  return str.replace(/^\s+|\s+$/g, '')
 }
 
 function toHex (n) {
@@ -1810,7 +1568,7 @@ function utf8ToBytes (string, units) {
   var leadSurrogate = null
   var bytes = []
 
-  for (var i = 0; i < length; ++i) {
+  for (var i = 0; i < length; i++) {
     codePoint = string.charCodeAt(i)
 
     // is surrogate component
@@ -1885,7 +1643,7 @@ function utf8ToBytes (string, units) {
 
 function asciiToBytes (str) {
   var byteArray = []
-  for (var i = 0; i < str.length; ++i) {
+  for (var i = 0; i < str.length; i++) {
     // Node's code seems to be doing this and not & 0x7F..
     byteArray.push(str.charCodeAt(i) & 0xFF)
   }
@@ -1895,7 +1653,7 @@ function asciiToBytes (str) {
 function utf16leToBytes (str, units) {
   var c, hi, lo
   var byteArray = []
-  for (var i = 0; i < str.length; ++i) {
+  for (var i = 0; i < str.length; i++) {
     if ((units -= 2) < 0) break
 
     c = str.charCodeAt(i)
@@ -1913,27 +1671,15 @@ function base64ToBytes (str) {
 }
 
 function blitBuffer (src, dst, offset, length) {
-  for (var i = 0; i < length; ++i) {
+  for (var i = 0; i < length; i++) {
     if ((i + offset >= dst.length) || (i >= src.length)) break
     dst[i + offset] = src[i]
   }
   return i
 }
 
-// ArrayBuffer or Uint8Array objects from other contexts (i.e. iframes) do not pass
-// the `instanceof` check but they should be treated as of that type.
-// See: https://github.com/feross/buffer/issues/166
-function isInstance (obj, type) {
-  return obj instanceof type ||
-    (obj != null && obj.constructor != null && obj.constructor.name != null &&
-      obj.constructor.name === type.name)
-}
-function numberIsNaN (obj) {
-  // For IE11 support
-  return obj !== obj // eslint-disable-line no-self-compare
-}
-
-},{"base64-js":1,"ieee754":7}],4:[function(_dereq_,module,exports){
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"base64-js":1,"ieee754":7,"isarray":8}],4:[function(_dereq_,module,exports){
 (function (process,global){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
@@ -3094,7 +2840,7 @@ return Promise$2;
 
 
 }).call(this,_dereq_('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":10}],5:[function(_dereq_,module,exports){
+},{"_process":11}],5:[function(_dereq_,module,exports){
 (function (global, factory) {
   if (typeof define === 'function' && define.amd) {
     define(['exports', 'module'], factory);
@@ -3411,7 +3157,7 @@ if (typeof module !== "undefined" && module.exports) {
 },{}],7:[function(_dereq_,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
-  var eLen = (nBytes * 8) - mLen - 1
+  var eLen = nBytes * 8 - mLen - 1
   var eMax = (1 << eLen) - 1
   var eBias = eMax >> 1
   var nBits = -7
@@ -3424,12 +3170,12 @@ exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   e = s & ((1 << (-nBits)) - 1)
   s >>= (-nBits)
   nBits += eLen
-  for (; nBits > 0; e = (e * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
 
   m = e & ((1 << (-nBits)) - 1)
   e >>= (-nBits)
   nBits += mLen
-  for (; nBits > 0; m = (m * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
 
   if (e === 0) {
     e = 1 - eBias
@@ -3444,7 +3190,7 @@ exports.read = function (buffer, offset, isLE, mLen, nBytes) {
 
 exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   var e, m, c
-  var eLen = (nBytes * 8) - mLen - 1
+  var eLen = nBytes * 8 - mLen - 1
   var eMax = (1 << eLen) - 1
   var eBias = eMax >> 1
   var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
@@ -3477,7 +3223,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
       m = 0
       e = eMax
     } else if (e + eBias >= 1) {
-      m = ((value * c) - 1) * Math.pow(2, mLen)
+      m = (value * c - 1) * Math.pow(2, mLen)
       e = e + eBias
     } else {
       m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
@@ -3495,6 +3241,13 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 }
 
 },{}],8:[function(_dereq_,module,exports){
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+},{}],9:[function(_dereq_,module,exports){
 /*
 
  Copyright 2000, Silicon Graphics, Inc. All Rights Reserved.
@@ -3554,7 +3307,7 @@ function W(a,b){for(var c=a.d,d=a.e,e=a.c,f=b,g=c[f];;){var h=f<<1;h<a.a&&u(d[c[
 gluEnum:{GLU_TESS_MESH:100112,GLU_TESS_TOLERANCE:100142,GLU_TESS_WINDING_RULE:100140,GLU_TESS_BOUNDARY_ONLY:100141,GLU_INVALID_ENUM:100900,GLU_INVALID_VALUE:100901,GLU_TESS_BEGIN:100100,GLU_TESS_VERTEX:100101,GLU_TESS_END:100102,GLU_TESS_ERROR:100103,GLU_TESS_EDGE_FLAG:100104,GLU_TESS_COMBINE:100105,GLU_TESS_BEGIN_DATA:100106,GLU_TESS_VERTEX_DATA:100107,GLU_TESS_END_DATA:100108,GLU_TESS_ERROR_DATA:100109,GLU_TESS_EDGE_FLAG_DATA:100110,GLU_TESS_COMBINE_DATA:100111}};X.prototype.gluDeleteTess=X.prototype.x;
 X.prototype.gluTessProperty=X.prototype.B;X.prototype.gluGetTessProperty=X.prototype.y;X.prototype.gluTessNormal=X.prototype.A;X.prototype.gluTessCallback=X.prototype.z;X.prototype.gluTessVertex=X.prototype.C;X.prototype.gluTessBeginPolygon=X.prototype.u;X.prototype.gluTessBeginContour=X.prototype.t;X.prototype.gluTessEndContour=X.prototype.v;X.prototype.gluTessEndPolygon=X.prototype.w; if (typeof module !== 'undefined') { module.exports = this.libtess; }
 
-},{}],9:[function(_dereq_,module,exports){
+},{}],10:[function(_dereq_,module,exports){
 (function (Buffer){
 /**
  * https://opentype.js.org v0.9.0 | (c) Frederik De Bleser and other contributors | MIT License | Uses tiny-inflate by Devon Govett and string.prototype.codepointat polyfill by Mathias Bynens
@@ -16037,7 +15790,7 @@ X.prototype.gluTessProperty=X.prototype.B;X.prototype.gluGetTessProperty=X.proto
 
 
 }).call(this,_dereq_("buffer").Buffer)
-},{"buffer":3,"fs":2}],10:[function(_dereq_,module,exports){
+},{"buffer":3,"fs":2}],11:[function(_dereq_,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -16223,7 +15976,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],11:[function(_dereq_,module,exports){
+},{}],12:[function(_dereq_,module,exports){
 (function(self) {
   'use strict';
 
@@ -16686,7 +16439,7 @@ process.umask = function() { return 0; };
   self.fetch.polyfill = true
 })(typeof self !== 'undefined' ? self : this);
 
-},{}],12:[function(_dereq_,module,exports){
+},{}],13:[function(_dereq_,module,exports){
 'use strict';
 
 // core
@@ -16776,7 +16529,7 @@ _dereq_('./core/init');
 
 module.exports = p5;
 
-},{"./color/color_conversion":13,"./color/creating_reading":14,"./color/p5.Color":15,"./color/setting":16,"./core/constants":17,"./core/environment":18,"./core/error_helpers":19,"./core/helpers":20,"./core/init":21,"./core/legacy":22,"./core/main":23,"./core/p5.Element":24,"./core/p5.Graphics":25,"./core/p5.Renderer":26,"./core/p5.Renderer2D":27,"./core/rendering":28,"./core/shape/2d_primitives":29,"./core/shape/attributes":30,"./core/shape/curves":31,"./core/shape/vertex":32,"./core/shim":33,"./core/structure":34,"./core/transform":35,"./data/p5.TypedDict":36,"./events/acceleration":37,"./events/keyboard":38,"./events/mouse":39,"./events/touch":40,"./image/filters":41,"./image/image":42,"./image/loading_displaying":43,"./image/p5.Image":44,"./image/pixels":45,"./io/files":46,"./io/p5.Table":47,"./io/p5.TableRow":48,"./io/p5.XML":49,"./math/calculation":50,"./math/math":51,"./math/noise":52,"./math/p5.Vector":53,"./math/random":54,"./math/trigonometry":55,"./typography/attributes":56,"./typography/loading_displaying":57,"./typography/p5.Font":58,"./utilities/array_functions":59,"./utilities/conversion":60,"./utilities/string_functions":61,"./utilities/time_date":62,"./webgl/3d_primitives":63,"./webgl/interaction":64,"./webgl/light":65,"./webgl/loading":66,"./webgl/material":67,"./webgl/p5.Camera":68,"./webgl/p5.Geometry":69,"./webgl/p5.Matrix":70,"./webgl/p5.RendererGL":73,"./webgl/p5.RendererGL.Immediate":71,"./webgl/p5.RendererGL.Retained":72,"./webgl/p5.Shader":74,"./webgl/p5.Texture":75,"./webgl/text":76}],13:[function(_dereq_,module,exports){
+},{"./color/color_conversion":14,"./color/creating_reading":15,"./color/p5.Color":16,"./color/setting":17,"./core/constants":18,"./core/environment":19,"./core/error_helpers":20,"./core/helpers":21,"./core/init":22,"./core/legacy":23,"./core/main":24,"./core/p5.Element":25,"./core/p5.Graphics":26,"./core/p5.Renderer":27,"./core/p5.Renderer2D":28,"./core/rendering":29,"./core/shape/2d_primitives":30,"./core/shape/attributes":31,"./core/shape/curves":32,"./core/shape/vertex":33,"./core/shim":34,"./core/structure":35,"./core/transform":36,"./data/p5.TypedDict":37,"./events/acceleration":38,"./events/keyboard":39,"./events/mouse":40,"./events/touch":41,"./image/filters":42,"./image/image":43,"./image/loading_displaying":44,"./image/p5.Image":45,"./image/pixels":46,"./io/files":47,"./io/p5.Table":48,"./io/p5.TableRow":49,"./io/p5.XML":50,"./math/calculation":51,"./math/math":52,"./math/noise":53,"./math/p5.Vector":54,"./math/random":55,"./math/trigonometry":56,"./typography/attributes":57,"./typography/loading_displaying":58,"./typography/p5.Font":59,"./utilities/array_functions":60,"./utilities/conversion":61,"./utilities/string_functions":62,"./utilities/time_date":63,"./webgl/3d_primitives":64,"./webgl/interaction":65,"./webgl/light":66,"./webgl/loading":67,"./webgl/material":68,"./webgl/p5.Camera":69,"./webgl/p5.Geometry":70,"./webgl/p5.Matrix":71,"./webgl/p5.RendererGL":74,"./webgl/p5.RendererGL.Immediate":72,"./webgl/p5.RendererGL.Retained":73,"./webgl/p5.Shader":75,"./webgl/p5.Texture":76,"./webgl/text":77}],14:[function(_dereq_,module,exports){
 /**
  * @module Color
  * @submodule Color Conversion
@@ -17051,7 +16804,7 @@ p5.ColorConversion._rgbaToHSLA = function(rgba) {
 
 module.exports = p5.ColorConversion;
 
-},{"../core/main":23}],14:[function(_dereq_,module,exports){
+},{"../core/main":24}],15:[function(_dereq_,module,exports){
 /**
  * @module Color
  * @submodule Creating & Reading
@@ -17078,10 +16831,10 @@ _dereq_('../core/error_helpers');
  * <div>
  * <code>
  * noStroke();
- * let c = color(0, 126, 255, 102);
+ * var c = color(0, 126, 255, 102);
  * fill(c);
  * rect(15, 15, 35, 70);
- * let value = alpha(c); // Sets 'value' to 102
+ * var value = alpha(c); // Sets 'value' to 102
  * fill(value);
  * rect(50, 15, 35, 70);
  * </code>
@@ -17122,11 +16875,11 @@ p5.prototype.alpha = function(c) {
  * @example
  * <div>
  * <code>
- * let c = color(175, 100, 220); // Define color 'c'
+ * var c = color(175, 100, 220); // Define color 'c'
  * fill(c); // Use color variable 'c' as fill color
  * rect(15, 20, 35, 60); // Draw left rectangle
  *
- * let blueValue = blue(c); // Get blue in 'c'
+ * var blueValue = blue(c); // Get blue in 'c'
  * print(blueValue); // Prints "220.0"
  * fill(0, 0, blueValue); // Use 'blueValue' in new fill
  * rect(50, 20, 35, 60); // Draw right rectangle
@@ -17154,10 +16907,10 @@ p5.prototype.blue = function(c) {
  * <code>
  * noStroke();
  * colorMode(HSB, 255);
- * let c = color(0, 126, 255);
+ * var c = color(0, 126, 255);
  * fill(c);
  * rect(15, 20, 35, 60);
- * let value = brightness(c); // Sets 'value' to 255
+ * var value = brightness(c); // Sets 'value' to 255
  * fill(value);
  * rect(50, 20, 35, 60);
  * </code>
@@ -17200,7 +16953,7 @@ p5.prototype.brightness = function(c) {
  * @example
  * <div>
  * <code>
- * let c = color(255, 204, 0); // Define color 'c'
+ * var c = color(255, 204, 0); // Define color 'c'
  * fill(c); // Use color variable 'c' as fill color
  * noStroke(); // Don't draw a stroke around shapes
  * rect(30, 20, 55, 55); // Draw rectangle
@@ -17209,7 +16962,7 @@ p5.prototype.brightness = function(c) {
  *
  * <div>
  * <code>
- * let c = color(255, 204, 0); // Define color 'c'
+ * var c = color(255, 204, 0); // Define color 'c'
  * fill(c); // Use color variable 'c' as fill color
  * noStroke(); // Don't draw a stroke around shapes
  * ellipse(25, 25, 80, 80); // Draw left circle
@@ -17225,7 +16978,7 @@ p5.prototype.brightness = function(c) {
  * <div>
  * <code>
  * // Named SVG & CSS colors may be used,
- * let c = color('magenta');
+ * var c = color('magenta');
  * fill(c); // Use 'c' as fill color
  * noStroke(); // Don't draw a stroke around shapes
  * rect(20, 20, 60, 60); // Draw rectangle
@@ -17236,7 +16989,7 @@ p5.prototype.brightness = function(c) {
  * <code>
  * // as can hex color codes:
  * noStroke(); // Don't draw a stroke around shapes
- * let c = color('#0f0');
+ * var c = color('#0f0');
  * fill(c); // Use 'c' as fill color
  * rect(0, 10, 45, 80); // Draw rectangle
  *
@@ -17250,7 +17003,7 @@ p5.prototype.brightness = function(c) {
  * <code>
  * // RGB and RGBA color strings are also supported:
  * // these all set to the same color (solid blue)
- * let c;
+ * var c;
  * noStroke(); // Don't draw a stroke around shapes
  * c = color('rgb(0,0,255)');
  * fill(c); // Use 'c' as fill color
@@ -17274,7 +17027,7 @@ p5.prototype.brightness = function(c) {
  * <code>
  * // HSL color is also supported and can be specified
  * // by value
- * let c;
+ * var c;
  * noStroke(); // Don't draw a stroke around shapes
  * c = color('hsl(160, 100%, 50%)');
  * fill(c); // Use 'c' as fill color
@@ -17290,7 +17043,7 @@ p5.prototype.brightness = function(c) {
  * <code>
  * // HSB color is also supported and can be specified
  * // by value
- * let c;
+ * var c;
  * noStroke(); // Don't draw a stroke around shapes
  * c = color('hsb(160, 100%, 50%)');
  * fill(c); // Use 'c' as fill color
@@ -17304,7 +17057,7 @@ p5.prototype.brightness = function(c) {
  *
  * <div>
  * <code>
- * let c; // Declare color 'c'
+ * var c; // Declare color 'c'
  * noStroke(); // Don't draw a stroke around shapes
  *
  * // If no colorMode is specified, then the
@@ -17380,11 +17133,11 @@ p5.prototype.color = function() {
  * @example
  * <div>
  * <code>
- * let c = color(20, 75, 200); // Define color 'c'
+ * var c = color(20, 75, 200); // Define color 'c'
  * fill(c); // Use color variable 'c' as fill color
  * rect(15, 20, 35, 60); // Draw left rectangle
  *
- * let greenValue = green(c); // Get green in 'c'
+ * var greenValue = green(c); // Get green in 'c'
  * print(greenValue); // Print "75.0"
  * fill(0, greenValue, 0); // Use 'greenValue' in new fill
  * rect(50, 20, 35, 60); // Draw right rectangle
@@ -17419,10 +17172,10 @@ p5.prototype.green = function(c) {
  * <code>
  * noStroke();
  * colorMode(HSB, 255);
- * let c = color(0, 126, 255);
+ * var c = color(0, 126, 255);
  * fill(c);
  * rect(15, 20, 35, 60);
- * let value = hue(c); // Sets 'value' to "0"
+ * var value = hue(c); // Sets 'value' to "0"
  * fill(value);
  * rect(50, 20, 35, 60);
  * </code>
@@ -17460,11 +17213,11 @@ p5.prototype.hue = function(c) {
  * colorMode(RGB);
  * stroke(255);
  * background(51);
- * let from = color(218, 165, 32);
- * let to = color(72, 61, 139);
+ * var from = color(218, 165, 32);
+ * var to = color(72, 61, 139);
  * colorMode(RGB); // Try changing to HSB.
- * let interA = lerpColor(from, to, 0.33);
- * let interB = lerpColor(from, to, 0.66);
+ * var interA = lerpColor(from, to, 0.33);
+ * var interB = lerpColor(from, to, 0.66);
  * fill(from);
  * rect(10, 20, 20, 60);
  * fill(interA);
@@ -17547,10 +17300,10 @@ p5.prototype.lerpColor = function(c1, c2, amt) {
  * <code>
  * noStroke();
  * colorMode(HSL);
- * let c = color(156, 100, 50, 1);
+ * var c = color(156, 100, 50, 1);
  * fill(c);
  * rect(15, 20, 35, 60);
- * let value = lightness(c); // Sets 'value' to 50
+ * var value = lightness(c); // Sets 'value' to 50
  * fill(value);
  * rect(50, 20, 35, 60);
  * </code>
@@ -17575,11 +17328,11 @@ p5.prototype.lightness = function(c) {
  * @example
  * <div>
  * <code>
- * let c = color(255, 204, 0); // Define color 'c'
+ * var c = color(255, 204, 0); // Define color 'c'
  * fill(c); // Use color variable 'c' as fill color
  * rect(15, 20, 35, 60); // Draw left rectangle
  *
- * let redValue = red(c); // Get red in 'c'
+ * var redValue = red(c); // Get red in 'c'
  * print(redValue); // Print "255.0"
  * fill(redValue, 0, 0); // Use 'redValue' in new fill
  * rect(50, 20, 35, 60); // Draw right rectangle
@@ -17589,9 +17342,9 @@ p5.prototype.lightness = function(c) {
  * <div>
  * <code>
  * colorMode(RGB, 255);
- * let c = color(127, 255, 0);
+ * var c = color(127, 255, 0);
  * colorMode(RGB, 1);
- * let myColor = red(c);
+ * var myColor = red(c);
  * print(myColor);
  * </code>
  * </div>
@@ -17622,10 +17375,10 @@ p5.prototype.red = function(c) {
  * <code>
  * noStroke();
  * colorMode(HSB, 255);
- * let c = color(0, 126, 255);
+ * var c = color(0, 126, 255);
  * fill(c);
  * rect(15, 20, 35, 60);
- * let value = saturation(c); // Sets 'value' to 126
+ * var value = saturation(c); // Sets 'value' to 126
  * fill(value);
  * rect(50, 20, 35, 60);
  * </code>
@@ -17643,7 +17396,7 @@ p5.prototype.saturation = function(c) {
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/error_helpers":19,"../core/main":23,"./p5.Color":15}],15:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/error_helpers":20,"../core/main":24,"./p5.Color":16}],16:[function(_dereq_,module,exports){
 /**
  * @module Color
  * @submodule Creating & Reading
@@ -17709,7 +17462,7 @@ p5.Color = function(pInst, vals) {
  * @example
  * <div>
  * <code>
- * let myColor;
+ * var myColor;
  * function setup() {
  *   createCanvas(200, 200);
  *   stroke(255);
@@ -17897,7 +17650,7 @@ p5.Color.prototype.toString = function(format) {
  * @example
  * <div>
  * <code>
- * let backgroundColor;
+ * var backgroundColor;
  *
  * function setup() {
  *   backgroundColor = color(100, 50, 150);
@@ -17924,7 +17677,7 @@ p5.Color.prototype.setRed = function(new_red) {
  * @example
  * <div>
  * <code>
- * let backgroundColor;
+ * var backgroundColor;
  *
  * function setup() {
  *   backgroundColor = color(100, 50, 150);
@@ -17951,7 +17704,7 @@ p5.Color.prototype.setGreen = function(new_green) {
  * @example
  * <div>
  * <code>
- * let backgroundColor;
+ * var backgroundColor;
  *
  * function setup() {
  *   backgroundColor = color(100, 50, 150);
@@ -17978,7 +17731,7 @@ p5.Color.prototype.setBlue = function(new_blue) {
  * @example
  * <div>
  * <code>
- * let squareColor;
+ * var squareColor;
  *
  * function setup() {
  *   ellipseMode(CORNERS);
@@ -18661,7 +18414,7 @@ p5.Color._parseInputs = function(r, g, b, a) {
 
 module.exports = p5.Color;
 
-},{"../core/constants":17,"../core/main":23,"./color_conversion":13}],16:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24,"./color_conversion":14}],17:[function(_dereq_,module,exports){
 /**
  * @module Color
  * @submodule Setting
@@ -18678,7 +18431,7 @@ _dereq_('./p5.Color');
 
 /**
  * The <a href="#/p5/background">background()</a> function sets the color used for the background of the
- * p5.js canvas. The default background is transparent. This function is
+ * p5.js canvas. The default background is light gray. This function is
  * typically used within <a href="#/p5/draw">draw()</a> to clear the display window at the beginning
  * of each frame, but it can be used inside <a href="#/p5/setup">setup()</a> to set the background on
  * the first frame of animation or if the background need only be set once.
@@ -18908,8 +18661,8 @@ p5.prototype.clear = function() {
  * <code>
  * noStroke();
  * colorMode(RGB, 100);
- * for (let i = 0; i < 100; i++) {
- *   for (let j = 0; j < 100; j++) {
+ * for (var i = 0; i < 100; i++) {
+ *   for (var j = 0; j < 100; j++) {
  *     stroke(i, j, 0);
  *     point(i, j);
  *   }
@@ -18921,8 +18674,8 @@ p5.prototype.clear = function() {
  * <code>
  * noStroke();
  * colorMode(HSB, 100);
- * for (let i = 0; i < 100; i++) {
- *   for (let j = 0; j < 100; j++) {
+ * for (var i = 0; i < 100; i++) {
+ *   for (var j = 0; j < 100; j++) {
  *     stroke(i, j, 100);
  *     point(i, j);
  *   }
@@ -18933,10 +18686,10 @@ p5.prototype.clear = function() {
  * <div>
  * <code>
  * colorMode(RGB, 255);
- * let c = color(127, 255, 0);
+ * var c = color(127, 255, 0);
  *
  * colorMode(RGB, 1);
- * let myColor = c._getRed();
+ * var myColor = c._getRed();
  * text(myColor, 10, 10, 80, 80);
  * </code>
  * </div>
@@ -19417,7 +19170,7 @@ p5.prototype.stroke = function() {
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/main":23,"./p5.Color":15}],17:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24,"./p5.Color":16}],18:[function(_dereq_,module,exports){
 /**
  * @module Constants
  * @submodule Constants
@@ -19927,11 +19680,6 @@ module.exports = {
    * @final
    */
   BOLD: 'bold',
-  /**
-   * @property {String} BOLDITALIC
-   * @final
-   */
-  BOLDITALIC: 'bold italic',
 
   // TYPOGRAPHY-INTERNAL
   _DEFAULT_TEXT_FILL: '#000000',
@@ -19950,11 +19698,7 @@ module.exports = {
   TEXTURE: 'texture',
   IMMEDIATE: 'immediate',
 
-  // WEBGL TEXTURE MODE
-  // NORMAL already exists for typography
-  IMAGE: 'image',
-
-  // WEBGL TEXTURE WRAP AND FILTERING
+  //WEBGL TEXTURE WRAP AND FILTERING
   // LINEAR already exists above
   NEAREST: 'nearest',
   REPEAT: 'repeat',
@@ -19990,7 +19734,7 @@ module.exports = {
   AXES: 'axes'
 };
 
-},{}],18:[function(_dereq_,module,exports){
+},{}],19:[function(_dereq_,module,exports){
 /**
  * @module Environment
  * @submodule Environment
@@ -20019,16 +19763,12 @@ var _windowPrint = window.print;
  * the function. Individual elements can be
  * separated with quotes ("") and joined with the addition operator (+).
  *
- * Note that calling print() without any arguments invokes the window.print()
- * function which opens the browser's print dialog. To print a blank line
- * to console you can write print('\n').
- *
  * @method print
  * @param {Any} contents any combination of Number, String, Object, Boolean,
  *                       Array to print
  * @example
  * <div><code class='norender'>
- * let x = 10;
+ * var x = 10;
  * print('The value of x is ' + x);
  * // prints "The value of x is 10"
  * </code></div>
@@ -20109,36 +19849,26 @@ p5.prototype.focused = document.hasFocus();
  * must be less than the dimensions of the image.
  *
  * @method cursor
- * @param {String|Constant} type Built-In: either ARROW, CROSS, HAND, MOVE, TEXT and WAIT
- *                               Native CSS properties: 'grab', 'progress', 'cell' etc.
- *                               External: path for cursor's images
- *                               (Allowed File extensions: .cur, .gif, .jpg, .jpeg, .png)
- *                               For more information on Native CSS cursors and url visit:
- *                               https://developer.mozilla.org/en-US/docs/Web/CSS/cursor
- * @param {Number}          [x]  the horizontal active spot of the cursor (must be less than 32)
- * @param {Number}          [y]  the vertical active spot of the cursor (must be less than 32)
+ * @param {String|Constant} type either ARROW, CROSS, HAND, MOVE, TEXT, or
+ *                               WAIT, or path for image
+ * @param {Number}          [x]  the horizontal active spot of the cursor
+ * @param {Number}          [y]  the vertical active spot of the cursor
  * @example
  * <div><code>
- * // Move the mouse across the quadrants
- * // to see the cursor change
+ * // Move the mouse left and right across the image
+ * // to see the cursor change from a cross to a hand
  * function draw() {
  *   line(width / 2, 0, width / 2, height);
- *   line(0, height / 2, width, height / 2);
- *   if (mouseX < 50 && mouseY < 50) {
+ *   if (mouseX < 50) {
  *     cursor(CROSS);
- *   } else if (mouseX > 50 && mouseY < 50) {
- *     cursor('progress');
- *   } else if (mouseX > 50 && mouseY > 50) {
- *     cursor('https://s3.amazonaws.com/mupublicdata/cursor.cur');
  *   } else {
- *     cursor('grab');
+ *     cursor(HAND);
  *   }
  * }
  * </code></div>
  *
  * @alt
- * canvas is divided into four quadrants. cursor on first is a cross, second is a progress,
- * third is a custom cursor using path to the cursor and fourth is a grab.
+ * horizontal line divides canvas. cursor on left is a cross, right is hand.
  *
  */
 p5.prototype.cursor = function(type, x, y) {
@@ -20196,9 +19926,9 @@ p5.prototype.cursor = function(type, x, y) {
  * @example
  *
  * <div><code>
- * let rectX = 0;
- * let fr = 30; //starting FPS
- * let clr;
+ * var rectX = 0;
+ * var fr = 30; //starting FPS
+ * var clr;
  *
  * function setup() {
  *   background(200);
@@ -20242,6 +19972,7 @@ p5.prototype.frameRate = function(fps) {
     return this._frameRate;
   } else {
     this._setProperty('_targetFrameRate', fps);
+    this._runFrames();
     return this;
   }
 };
@@ -20464,7 +20195,7 @@ p5.prototype.height = 0;
  * }
  * function mousePressed() {
  *   if (mouseX > 0 && mouseX < 100 && mouseY > 0 && mouseY < 100) {
- *     let fs = fullscreen();
+ *     var fs = fullscreen();
  *     fullscreen(!fs);
  *   }
  * }
@@ -20559,7 +20290,7 @@ p5.prototype.pixelDensity = function(val) {
  * <div>
  * <code>
  * function setup() {
- *   let density = displayDensity();
+ *   var density = displayDensity();
  *   pixelDensity(density);
  *   createCanvas(100, 100);
  *   background(200);
@@ -20614,8 +20345,8 @@ function exitFullscreen() {
  * @example
  * <div>
  * <code>
- * let url;
- * let x = 100;
+ * var url;
+ * var x = 100;
  *
  * function setup() {
  *   fill(0);
@@ -20645,8 +20376,8 @@ p5.prototype.getURL = function() {
  * @example
  * <div class='norender'><code>
  * function setup() {
- *   let urlPath = getURLPath();
- *   for (let i = 0; i < urlPath.length; i++) {
+ *   var urlPath = getURLPath();
+ *   for (var i = 0; i < urlPath.length; i++) {
  *     text(urlPath[i], 10, i * 20 + 20);
  *   }
  * }
@@ -20671,7 +20402,7 @@ p5.prototype.getURLPath = function() {
  * // Example: http://p5js.org?year=2014&month=May&day=15
  *
  * function setup() {
- *   let params = getURLParams();
+ *   var params = getURLParams();
  *   text(params.day, 10, 20);
  *   text(params.month, 10, 40);
  *   text(params.year, 10, 60);
@@ -20697,7 +20428,7 @@ p5.prototype.getURLParams = function() {
 
 module.exports = p5;
 
-},{"./constants":17,"./main":23}],19:[function(_dereq_,module,exports){
+},{"./constants":18,"./main":24}],20:[function(_dereq_,module,exports){
 /**
  * @for p5
  * @requires core
@@ -20708,12 +20439,8 @@ module.exports = p5;
 var p5 = _dereq_('./main');
 var constants = _dereq_('./constants');
 
-// p5.js blue, p5.js orange, auto dark green; fallback p5.js darkened magenta
-// See testColors below for all the color codes and names
-var typeColors = ['#2D7BB6', '#EE9900', '#4DB200', '#C83C00'];
-
 if (typeof IS_MINIFIED !== 'undefined') {
-  p5._validateParameters = p5._friendlyFileLoadError = p5._friendlyError = function() {};
+  p5._validateParameters = p5._friendlyFileLoadError = function() {};
 } else {
   var doFriendlyWelcome = false; // TEMP until we get it all working LM
   // for parameter validation
@@ -20769,7 +20496,6 @@ if (typeof IS_MINIFIED !== 'undefined') {
   /**
    * Prints out a fancy, colorful message to the console log
    *
-   * @method report
    * @private
    * @param  {String}               message the words to be said
    * @param  {String}               func    the name of the function to link
@@ -20777,6 +20503,12 @@ if (typeof IS_MINIFIED !== 'undefined') {
    *
    * @return console logs
    */
+  // Wrong number of params, undefined param, wrong type
+  var FILE_LOAD = 3;
+  var ERR_PARAMS = 3;
+  // p5.js blue, p5.js orange, auto dark green; fallback p5.js darkened magenta
+  // See testColors below for all the color codes and names
+  var typeColors = ['#2D7BB6', '#EE9900', '#4DB200', '#C83C00'];
   var report = function(message, func, color) {
     if (doFriendlyWelcome) {
       friendlyWelcome();
@@ -20845,15 +20577,6 @@ if (typeof IS_MINIFIED !== 'undefined') {
         'we recommend splitting the file into smaller segments and fetching those.'
     }
   };
-
-  /**
-   * This is called internally if there is a error during file loading.
-   *
-   * @method _friendlyFileLoadError
-   * @private
-   * @param  {Number} errorType
-   * @param  {String} filePath
-   */
   p5._friendlyFileLoadError = function(errorType, filePath) {
     var errorInfo = errorCases[errorType];
     var message;
@@ -20871,20 +20594,7 @@ if (typeof IS_MINIFIED !== 'undefined') {
         (errorInfo.message || '') +
         ' or running a local server.';
     }
-    report(message, errorInfo.method, 3);
-  };
-
-  /**
-   * This is a generic method that can be called from anywhere in the p5
-   * library to alert users to a common error.
-   *
-   * @method _friendlyError
-   * @private
-   * @param  {Number} message message to be printed
-   * @param  {String} method name of method
-   */
-  p5._friendlyError = function(message, method) {
-    report(message, method);
+    report(message, errorInfo.method, FILE_LOAD);
   };
 
   var docCache = {};
@@ -21277,7 +20987,7 @@ if (typeof IS_MINIFIED !== 'undefined') {
         }
       } catch (err) {}
 
-      report(message + '.', func, 3);
+      report(message + '.', func, ERR_PARAMS);
     }
   };
 
@@ -21494,7 +21204,7 @@ if (document.readyState !== 'complete') {
 
 module.exports = p5;
 
-},{"../../docs/reference/data.json":undefined,"./constants":17,"./main":23}],20:[function(_dereq_,module,exports){
+},{"../../docs/reference/data.json":undefined,"./constants":18,"./main":24}],21:[function(_dereq_,module,exports){
 /**
  * @requires constants
  */
@@ -21517,7 +21227,7 @@ module.exports = {
   }
 };
 
-},{"./constants":17}],21:[function(_dereq_,module,exports){
+},{"./constants":18}],22:[function(_dereq_,module,exports){
 'use strict';
 
 var p5 = _dereq_('../core/main');
@@ -21559,7 +21269,7 @@ if (document.readyState === 'complete') {
   window.addEventListener('load', _globalInit, false);
 }
 
-},{"../core/main":23}],22:[function(_dereq_,module,exports){
+},{"../core/main":24}],23:[function(_dereq_,module,exports){
 /**
  * @for p5
  * @requires core
@@ -21574,6 +21284,10 @@ if (document.readyState === 'complete') {
 
 var p5 = _dereq_('./main');
 
+p5.prototype.exit = function() {
+  throw new Error('exit() not implemented, see remove()');
+};
+
 p5.prototype.pushStyle = function() {
   throw new Error('pushStyle() not used, see push()');
 };
@@ -21582,9 +21296,15 @@ p5.prototype.popStyle = function() {
   throw new Error('popStyle() not used, see pop()');
 };
 
+p5.prototype.size = function() {
+  var s = 'size() is not a valid p5 function, to set the size of the ';
+  s += 'drawing canvas, please use createCanvas() instead';
+  throw new Error(s);
+};
+
 module.exports = p5;
 
-},{"./main":23}],23:[function(_dereq_,module,exports){
+},{"./main":24}],24:[function(_dereq_,module,exports){
 /**
  * @module Structure
  * @submodule Structure
@@ -21649,15 +21369,15 @@ var p5 = function(sketch, node, sync) {
    * @method preload
    * @example
    * <div><code>
-   * let img;
-   * let c;
+   * var img;
+   * var c;
    * function preload() {
-   *   // preload() runs once
+  // preload() runs once
    *   img = loadImage('assets/laDefense.jpg');
    * }
    *
    * function setup() {
-   *   // setup() waits until preload() is done
+  // setup() waits until preload() is done
    *   img.loadPixels();
    *   // get color of middle pixel
    *   c = img.get(img.width / 2, img.height / 2);
@@ -21687,7 +21407,7 @@ var p5 = function(sketch, node, sync) {
    * @method setup
    * @example
    * <div><code>
-   * let a = 0;
+   * var a = 0;
    *
    * function setup() {
    *   background(0);
@@ -21735,13 +21455,13 @@ var p5 = function(sketch, node, sync) {
    * @method draw
    * @example
    * <div><code>
-   * let yPos = 0;
+   * var yPos = 0;
    * function setup() {
-   *   // setup() runs once
+  // setup() runs once
    *   frameRate(30);
    * }
    * function draw() {
-   *   // draw() loops forever, until stopped
+  // draw() loops forever, until stopped
    *   background(204);
    *   yPos = yPos - 1;
    *   if (yPos < 0) {
@@ -21860,6 +21580,7 @@ var p5 = function(sketch, node, sync) {
       this._runIfPreloadsAreDone();
     } else {
       this._setup();
+      this._runFrames();
       this._draw();
     }
   }.bind(this);
@@ -21872,6 +21593,7 @@ var p5 = function(sketch, node, sync) {
         loadingScreen.parentNode.removeChild(loadingScreen);
       }
       context._setup();
+      context._runFrames();
       context._draw();
     }
   };
@@ -21974,6 +21696,12 @@ var p5 = function(sketch, node, sync) {
     // an opportunity to draw.
     if (this._loop) {
       this._requestAnimId = window.requestAnimationFrame(this._draw);
+    }
+  }.bind(this);
+
+  this._runFrames = function() {
+    if (this._updateInterval) {
+      clearInterval(this._updateInterval);
     }
   }.bind(this);
 
@@ -22294,7 +22022,7 @@ p5.prototype._createFriendlyGlobalFunctionBinder = function(options) {
 
 module.exports = p5;
 
-},{"./constants":17,"./shim":33}],24:[function(_dereq_,module,exports){
+},{"./constants":18,"./shim":34}],25:[function(_dereq_,module,exports){
 /**
  * @module DOM
  * @submodule DOM
@@ -22325,14 +22053,13 @@ p5.Element = function(elt, pInst) {
    * @example
    * <div>
    * <code>
-   * function setup() {
-   *   var c = createCanvas(50, 50);
-   *   c.elt.style.border = '5px solid red';
-   * }
-   *
-   * function draw() {
-   *   background(220);
-   * }
+   * createCanvas(300, 500);
+   * background(0, 0, 0, 0);
+   * var input = createInput();
+   * input.position(20, 225);
+   * var inputElem = new p5.Element(input.elt);
+   * inputElem.style('width:450px;');
+   * inputElem.value('some string');
    * </code>
    * </div>
    *
@@ -22354,11 +22081,6 @@ p5.Element = function(elt, pInst) {
  * For more ways to position the canvas, see the
  * <a href='https://github.com/processing/p5.js/wiki/Positioning-your-canvas'>
  * positioning the canvas</a> wiki page.
- *
- * All above examples except for the first one require the inclusion of
- * the p5.dom library in your index.html. See the
- * <a href='http://p5js.org/libraries/#using-a-library'>using a library</a>
- * section for information on how to include this library.
  *
  * @method parent
  * @param  {String|p5.Element|Object} parent the ID, DOM node, or <a href="#/p5.Element">p5.Element</a>
@@ -22542,10 +22264,10 @@ p5.Element.prototype.mousePressed = function(fxn) {
     this._pInst._setProperty('mouseIsPressed', true);
     this._pInst._setMouseButton(event);
     // Pass along the return-value of the callback:
-    return fxn.call(this);
+    return fxn();
   };
   // Pass along the event-prepended form of the callback.
-  p5.Element._adjustListener('mousedown', eventPrependedFxn, this);
+  adjustListener('mousedown', eventPrependedFxn, this);
   return this;
 };
 
@@ -22594,7 +22316,7 @@ p5.Element.prototype.mousePressed = function(fxn) {
  *
  */
 p5.Element.prototype.doubleClicked = function(fxn) {
-  p5.Element._adjustListener('dblclick', fxn, this);
+  adjustListener('dblclick', fxn, this);
   return this;
 };
 
@@ -22660,7 +22382,7 @@ p5.Element.prototype.doubleClicked = function(fxn) {
  *
  */
 p5.Element.prototype.mouseWheel = function(fxn) {
-  p5.Element._adjustListener('wheel', fxn, this);
+  adjustListener('wheel', fxn, this);
   return this;
 };
 
@@ -22714,7 +22436,7 @@ p5.Element.prototype.mouseWheel = function(fxn) {
  *
  */
 p5.Element.prototype.mouseReleased = function(fxn) {
-  p5.Element._adjustListener('mouseup', fxn, this);
+  adjustListener('mouseup', fxn, this);
   return this;
 };
 
@@ -22770,7 +22492,7 @@ p5.Element.prototype.mouseReleased = function(fxn) {
  *
  */
 p5.Element.prototype.mouseClicked = function(fxn) {
-  p5.Element._adjustListener('click', fxn, this);
+  adjustListener('click', fxn, this);
   return this;
 };
 
@@ -22828,7 +22550,7 @@ p5.Element.prototype.mouseClicked = function(fxn) {
  *
  */
 p5.Element.prototype.mouseMoved = function(fxn) {
-  p5.Element._adjustListener('mousemove', fxn, this);
+  adjustListener('mousemove', fxn, this);
   return this;
 };
 
@@ -22871,7 +22593,109 @@ p5.Element.prototype.mouseMoved = function(fxn) {
  *
  */
 p5.Element.prototype.mouseOver = function(fxn) {
-  p5.Element._adjustListener('mouseover', fxn, this);
+  adjustListener('mouseover', fxn, this);
+  return this;
+};
+
+/**
+ * The .<a href="#/p5.Element/changed">changed()</a> function is called when the value of an
+ * element changes.
+ * This can be used to attach an element specific event listener.
+ *
+ * @method changed
+ * @param  {Function|Boolean} fxn function to be fired when the value of
+ *                                an element changes.
+ *                                if `false` is passed instead, the previously
+ *                                firing function will no longer fire.
+ * @chainable
+ * @example
+ * <div><code>
+ * var sel;
+ *
+ * function setup() {
+ *   textAlign(CENTER);
+ *   background(200);
+ *   sel = createSelect();
+ *   sel.position(10, 10);
+ *   sel.option('pear');
+ *   sel.option('kiwi');
+ *   sel.option('grape');
+ *   sel.changed(mySelectEvent);
+ * }
+ *
+ * function mySelectEvent() {
+ *   var item = sel.value();
+ *   background(200);
+ *   text("it's a " + item + '!', 50, 50);
+ * }
+ * </code></div>
+ * <div><code>
+ * var checkbox;
+ * var cnv;
+ *
+ * function setup() {
+ *   checkbox = createCheckbox(' fill');
+ *   checkbox.changed(changeFill);
+ *   cnv = createCanvas(100, 100);
+ *   cnv.position(0, 30);
+ *   noFill();
+ * }
+ *
+ * function draw() {
+ *   background(200);
+ *   ellipse(50, 50, 50, 50);
+ * }
+ *
+ * function changeFill() {
+ *   if (checkbox.checked()) {
+ *     fill(0);
+ *   } else {
+ *     noFill();
+ *   }
+ * }
+ * </code></div>
+ *
+ * @alt
+ * dropdown: pear, kiwi, grape. When selected text "its a" + selection shown.
+ *
+ */
+p5.Element.prototype.changed = function(fxn) {
+  adjustListener('change', fxn, this);
+  return this;
+};
+
+/**
+ * The .<a href="#/p5.Element/input">input()</a> function is called when any user input is
+ * detected with an element. The input event is often used
+ * to detect keystrokes in a input element, or changes on a
+ * slider element. This can be used to attach an element specific
+ * event listener.
+ *
+ * @method input
+ * @param  {Function|Boolean} fxn function to be fired when any user input is
+ *                                detected within the element.
+ *                                if `false` is passed instead, the previously
+ *                                firing function will no longer fire.
+ * @chainable
+ * @example
+ * <div class='norender'><code>
+ * // Open your console to see the output
+ * function setup() {
+ *   var inp = createInput('');
+ *   inp.input(myInputEvent);
+ * }
+ *
+ * function myInputEvent() {
+ *   console.log('you are typing: ', this.value());
+ * }
+ * </code></div>
+ *
+ * @alt
+ * no display.
+ *
+ */
+p5.Element.prototype.input = function(fxn) {
+  adjustListener('input', fxn, this);
   return this;
 };
 
@@ -22913,7 +22737,7 @@ p5.Element.prototype.mouseOver = function(fxn) {
  *
  */
 p5.Element.prototype.mouseOut = function(fxn) {
-  p5.Element._adjustListener('mouseout', fxn, this);
+  adjustListener('mouseout', fxn, this);
   return this;
 };
 
@@ -22961,7 +22785,7 @@ p5.Element.prototype.mouseOut = function(fxn) {
  *
  */
 p5.Element.prototype.touchStarted = function(fxn) {
-  p5.Element._adjustListener('touchstart', fxn, this);
+  adjustListener('touchstart', fxn, this);
   return this;
 };
 
@@ -23001,7 +22825,7 @@ p5.Element.prototype.touchStarted = function(fxn) {
  *
  */
 p5.Element.prototype.touchMoved = function(fxn) {
-  p5.Element._adjustListener('touchmove', fxn, this);
+  adjustListener('touchmove', fxn, this);
   return this;
 };
 
@@ -23050,7 +22874,7 @@ p5.Element.prototype.touchMoved = function(fxn) {
  *
  */
 p5.Element.prototype.touchEnded = function(fxn) {
-  p5.Element._adjustListener('touchend', fxn, this);
+  adjustListener('touchend', fxn, this);
   return this;
 };
 
@@ -23088,7 +22912,7 @@ p5.Element.prototype.touchEnded = function(fxn) {
  * nothing displayed
  */
 p5.Element.prototype.dragOver = function(fxn) {
-  p5.Element._adjustListener('dragover', fxn, this);
+  adjustListener('dragover', fxn, this);
   return this;
 };
 
@@ -23126,26 +22950,20 @@ p5.Element.prototype.dragOver = function(fxn) {
  * nothing displayed
  */
 p5.Element.prototype.dragLeave = function(fxn) {
-  p5.Element._adjustListener('dragleave', fxn, this);
+  adjustListener('dragleave', fxn, this);
   return this;
 };
 
 /**
- * Registers a callback that gets called every time a file that is
- * dropped on the element has been loaded.
- * p5 will load every dropped file into memory and pass it as a p5.File object to the callback.
- * Multiple files dropped at the same time will result in multiple calls to the callback.
- *
- * You can optionally pass a second callback which will be registered to the raw
- * <a href="https://developer.mozilla.org/en-US/docs/Web/Events/drop">drop</a> event.
- * The callback will thus be provided the original
- * <a href="https://developer.mozilla.org/en-US/docs/Web/API/DragEvent">DragEvent</a>.
- * Dropping multiple files at the same time will trigger the second callback once per drop,
- * whereas the first callback will trigger for each loaded file.
+ * The .<a href="#/p5.Element/drop">drop()</a> function is called for each file dropped on the element.
+ * It requires a callback that is passed a p5.File object.  You can
+ * optionally pass two callbacks, the first one (required) is triggered
+ * for each file dropped when the file is loaded.  The second (optional)
+ * is triggered just once when a file (or files) are dropped.
  *
  * @method drop
- * @param  {Function} callback  callback to receive loaded file.
- * @param  {Function} [fxn]     callback triggered when files are dropped.
+ * @param  {Function} callback  callback triggered when files are dropped.
+ * @param  {Function} [fxn]       callback to receive loaded file.
  * @chainable
  * @example
  * <div><code>
@@ -23190,33 +23008,49 @@ p5.Element.prototype.dragLeave = function(fxn) {
  * Canvas turns into whatever image is dragged/dropped onto it.
  */
 p5.Element.prototype.drop = function(callback, fxn) {
+  // Make a file loader callback and trigger user's callback
+  function makeLoader(theFile) {
+    // Making a p5.File object
+    var p5file = new p5.File(theFile);
+    return function(e) {
+      p5file.data = e.target.result;
+      callback(p5file);
+    };
+  }
+
   // Is the file stuff supported?
   if (window.File && window.FileReader && window.FileList && window.Blob) {
-    if (!this._dragDisabled) {
-      this._dragDisabled = true;
-
-      var preventDefault = function(evt) {
+    // If you want to be able to drop you've got to turn off
+    // a lot of default behavior
+    attachListener(
+      'dragover',
+      function(evt) {
+        evt.stopPropagation();
         evt.preventDefault();
-      };
+      },
+      this
+    );
 
-      // If you want to be able to drop you've got to turn off
-      // a lot of default behavior.
-      // avoid `attachListener` here, since it overrides other handlers.
-      this.elt.addEventListener('dragover', preventDefault);
+    // If this is a drag area we need to turn off the default behavior
+    attachListener(
+      'dragleave',
+      function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+      },
+      this
+    );
 
-      // If this is a drag area we need to turn off the default behavior
-      this.elt.addEventListener('dragleave', preventDefault);
-    }
-
-    // Attach the second argument as a callback that receives the raw drop event
+    // If just one argument it's the callback for the files
     if (typeof fxn !== 'undefined') {
-      p5.Element._attachListener('drop', fxn, this);
+      attachListener('drop', fxn, this);
     }
 
     // Deal with the files
-    p5.Element._attachListener(
+    attachListener(
       'drop',
       function(evt) {
+        evt.stopPropagation();
         evt.preventDefault();
 
         // A FileList
@@ -23225,7 +23059,16 @@ p5.Element.prototype.drop = function(callback, fxn) {
         // Load each one and trigger the callback
         for (var i = 0; i < files.length; i++) {
           var f = files[i];
-          p5.File._load(f, callback);
+          var reader = new FileReader();
+          reader.onload = makeLoader(f);
+
+          // Text or data?
+          // This should likely be improved
+          if (f.type.indexOf('text') > -1) {
+            reader.readAsText(f);
+          } else {
+            reader.readAsDataURL(f);
+          }
         }
       },
       this
@@ -23238,30 +23081,34 @@ p5.Element.prototype.drop = function(callback, fxn) {
 };
 
 // General handler for event attaching and detaching
-p5.Element._adjustListener = function(ev, fxn, ctx) {
+function adjustListener(ev, fxn, ctx) {
   if (fxn === false) {
-    p5.Element._detachListener(ev, ctx);
+    detachListener(ev, ctx);
   } else {
-    p5.Element._attachListener(ev, fxn, ctx);
+    attachListener(ev, fxn, ctx);
   }
   return this;
-};
+}
 
-p5.Element._attachListener = function(ev, fxn, ctx) {
+function attachListener(ev, fxn, ctx) {
+  // LM removing, not sure why we had this?
+  // var _this = ctx;
+  // var f = function (e) { fxn(e, _this); };
+
   // detach the old listener if there was one
   if (ctx._events[ev]) {
-    p5.Element._detachListener(ev, ctx);
+    detachListener(ev, ctx);
   }
   var f = fxn.bind(ctx);
   ctx.elt.addEventListener(ev, f, false);
   ctx._events[ev] = f;
-};
+}
 
-p5.Element._detachListener = function(ev, ctx) {
+function detachListener(ev, ctx) {
   var f = ctx._events[ev];
   ctx.elt.removeEventListener(ev, f, false);
   ctx._events[ev] = null;
-};
+}
 
 /**
  * Helper fxn for sharing pixel methods
@@ -23273,7 +23120,7 @@ p5.Element.prototype._setProperty = function(prop, value) {
 
 module.exports = p5.Element;
 
-},{"./main":23}],25:[function(_dereq_,module,exports){
+},{"./main":24}],26:[function(_dereq_,module,exports){
 /**
  * @module Rendering
  * @submodule Rendering
@@ -23346,7 +23193,7 @@ p5.Graphics.prototype = Object.create(p5.Element.prototype);
  *
  * @example
  * <div class='norender'><code>
- * let bg;
+ * var bg;
  * function setup() {
  *   bg = createCanvas(100, 100);
  *   bg.background(0);
@@ -23356,7 +23203,7 @@ p5.Graphics.prototype = Object.create(p5.Element.prototype);
  * </code></div>
  *
  * <div><code>
- * let bg;
+ * var bg;
  * function setup() {
  *   pixelDensity(1);
  *   createCanvas(100, 100);
@@ -23369,14 +23216,14 @@ p5.Graphics.prototype = Object.create(p5.Element.prototype);
  *   bg.ellipse(50, 50, 80, 80);
  * }
  * function draw() {
- *   let t = millis() / 1000;
+ *   var t = millis() / 1000;
  *   // draw the background
  *   if (bg) {
  *     image(bg, frameCount % 100, 0);
  *     image(bg, frameCount % 100 - 100, 0);
  *   }
  *   // draw the foreground
- *   let p = p5.Vector.fromAngle(t, 35).add(50, 50);
+ *   var p = p5.Vector.fromAngle(t, 35).add(50, 50);
  *   ellipse(p.x, p.y, 30);
  * }
  * function mouseClicked() {
@@ -23408,7 +23255,7 @@ p5.Graphics.prototype.remove = function() {
 
 module.exports = p5.Graphics;
 
-},{"./constants":17,"./main":23}],26:[function(_dereq_,module,exports){
+},{"./constants":18,"./main":24}],27:[function(_dereq_,module,exports){
 /**
  * @module Rendering
  * @submodule Rendering
@@ -23544,8 +23391,7 @@ p5.Renderer.prototype.textStyle = function(s) {
     if (
       s === constants.NORMAL ||
       s === constants.ITALIC ||
-      s === constants.BOLD ||
-      s === constants.BOLDITALIC
+      s === constants.BOLD
     ) {
       this._setProperty('_textStyle', s);
     }
@@ -23783,7 +23629,7 @@ function calculateOffset(object) {
 
 module.exports = p5.Renderer;
 
-},{"../core/constants":17,"./main":23}],27:[function(_dereq_,module,exports){
+},{"../core/constants":18,"./main":24}],28:[function(_dereq_,module,exports){
 'use strict';
 
 var p5 = _dereq_('./main');
@@ -24026,12 +23872,34 @@ p5.Renderer2D._copyHelper = function(
 };
 
 p5.Renderer2D.prototype.get = function(x, y, w, h) {
+  if (typeof w === 'undefined' && typeof h === 'undefined') {
+    if (typeof x === 'undefined' && typeof y === 'undefined') {
+      x = y = 0;
+      w = this.width;
+      h = this.height;
+    } else {
+      w = h = 1;
+    }
+  }
+
+  // if the section does not overlap the canvas
+  if (x + w < 0 || y + h < 0 || x >= this.width || y >= this.height) {
+    // TODO: is this valid for w,h > 1 ?
+    return [0, 0, 0, 255];
+  }
+
   var ctx = this._pInst || this;
   var pd = ctx._pixelDensity;
 
+  // round down to get integer numbers
+  x = Math.floor(x);
+  y = Math.floor(y);
+  w = Math.floor(w);
+  h = Math.floor(h);
+
   var sx = x * pd;
   var sy = y * pd;
-  if (w === 1 && h === 1) {
+  if (w === 1 && h === 1 && !(this instanceof p5.RendererGL)) {
     var imageData, index;
     if (ctx._pixelsDirty) {
       imageData = this.drawingContext.getImageData(sx, sy, 1, 1).data;
@@ -24559,7 +24427,7 @@ p5.Renderer2D.prototype.endShape = function(
       if (closeShape) {
         this.drawingContext.lineTo(vertices[i + 1][0], vertices[i + 1][1]);
       }
-      this._doFillStrokeClose(closeShape);
+      this._doFillStrokeClose();
     }
   } else if (
     isBezier &&
@@ -24584,7 +24452,7 @@ p5.Renderer2D.prototype.endShape = function(
         );
       }
     }
-    this._doFillStrokeClose(closeShape);
+    this._doFillStrokeClose();
   } else if (
     isQuadratic &&
     (shapeKind === constants.POLYGON || shapeKind === null)
@@ -24606,7 +24474,7 @@ p5.Renderer2D.prototype.endShape = function(
         );
       }
     }
-    this._doFillStrokeClose(closeShape);
+    this._doFillStrokeClose();
   } else {
     if (shapeKind === constants.POINTS) {
       for (i = 0; i < numVerts; i++) {
@@ -24662,7 +24530,7 @@ p5.Renderer2D.prototype.endShape = function(
             this._pInst.fill(vertices[i + 2][5]);
           }
         }
-        this._doFillStrokeClose(closeShape);
+        this._doFillStrokeClose();
       }
     } else if (shapeKind === constants.TRIANGLE_FAN) {
       if (numVerts > 2) {
@@ -24696,7 +24564,7 @@ p5.Renderer2D.prototype.endShape = function(
             }
           }
         }
-        this._doFillStrokeClose(closeShape);
+        this._doFillStrokeClose();
       }
     } else if (shapeKind === constants.QUADS) {
       for (i = 0; i + 3 < numVerts; i += 4) {
@@ -24713,7 +24581,7 @@ p5.Renderer2D.prototype.endShape = function(
         if (this._doStroke) {
           this._pInst.stroke(vertices[i + 3][6]);
         }
-        this._doFillStrokeClose(closeShape);
+        this._doFillStrokeClose();
       }
     } else if (shapeKind === constants.QUAD_STRIP) {
       if (numVerts > 3) {
@@ -24735,7 +24603,7 @@ p5.Renderer2D.prototype.endShape = function(
             this.drawingContext.moveTo(v[0], v[1]);
             this.drawingContext.lineTo(vertices[i + 1][0], vertices[i + 1][1]);
           }
-          this._doFillStrokeClose(closeShape);
+          this._doFillStrokeClose();
         }
       }
     } else {
@@ -24751,7 +24619,7 @@ p5.Renderer2D.prototype.endShape = function(
           }
         }
       }
-      this._doFillStrokeClose(closeShape);
+      this._doFillStrokeClose();
     }
   }
   isCurve = false;
@@ -24868,16 +24736,14 @@ p5.Renderer2D.prototype.curve = function(x1, y1, x2, y2, x3, y3, x4, y4) {
 // SHAPE | Vertex
 //////////////////////////////////////////////
 
-p5.Renderer2D.prototype._doFillStrokeClose = function(closeShape) {
-  if (closeShape) {
-    this.drawingContext.closePath();
-  }
+p5.Renderer2D.prototype._doFillStrokeClose = function() {
   if (this._doFill) {
     this.drawingContext.fill();
   }
   if (this._doStroke) {
     this.drawingContext.stroke();
   }
+  this.drawingContext.closePath();
 
   this._pInst._pixelsDirty = true;
 };
@@ -25062,7 +24928,7 @@ p5.Renderer2D.prototype.pop = function(style) {
 
 module.exports = p5.Renderer2D;
 
-},{"../image/filters":41,"./constants":17,"./main":23,"./p5.Renderer":26}],28:[function(_dereq_,module,exports){
+},{"../image/filters":42,"./constants":18,"./main":24,"./p5.Renderer":27}],29:[function(_dereq_,module,exports){
 /**
  * @module Rendering
  * @submodule Rendering
@@ -25273,7 +25139,7 @@ p5.prototype.noCanvas = function() {
  * @example
  * <div>
  * <code>
- * let pg;
+ * var pg;
  * function setup() {
  *   createCanvas(100, 100);
  *   pg = createGraphics(100, 100);
@@ -25390,7 +25256,7 @@ p5.prototype.blendMode = function(mode) {
 
 module.exports = p5;
 
-},{"../webgl/p5.RendererGL":73,"./constants":17,"./main":23,"./p5.Graphics":25,"./p5.Renderer2D":27}],29:[function(_dereq_,module,exports){
+},{"../webgl/p5.RendererGL":74,"./constants":18,"./main":24,"./p5.Graphics":26,"./p5.Renderer2D":28}],30:[function(_dereq_,module,exports){
 /**
  * @module Shape
  * @submodule 2D Primitives
@@ -25570,7 +25436,7 @@ p5.prototype.arc = function(x, y, w, h, start, stop, mode, detail) {
  * @param  {Number} y
  * @param  {Number} w
  * @param  {Number} h
- * @param  {Integer} detail number of radial sectors to draw (for WebGL mode)
+ * @param  {Integer} detail number of radial sectors to draw
  */
 p5.prototype.ellipse = function(x, y, w, h, detailX) {
   p5._validateParameters('ellipse', arguments);
@@ -25598,37 +25464,6 @@ p5.prototype.ellipse = function(x, y, w, h, detailX) {
 
   return this;
 };
-
-/**
- * Draws a circle to the screen. A circle is a simple closed shape.
- * It is the set of all points in a plane that are at a given distance from a given point, the centre.
- * This function is a special case of the ellipse() function, where the width and height of the ellipse are the same.
- * Height and width of the ellipse is equal to twice the radius of the circle..
- * By default, the first two parameters set the location of the centre of the circle, the third sets the radius of the circle.
- *
- * @method circle
- * @param  {Number} x  x-coordinate of the centre of the circle.
- * @param  {Number} y  y-coordinate of the centre of the circle.
- * @param  {Number} r  radius of the circle.
- * @chainable
- * @example
- * <div>
- * <code>
- * // Draw a circle at location (30, 30) with a radius of 20.
- * circle(30, 30, 20);
- * </code>
- * </div>
- *
- * @alt
- * white circle with black outline in mid of canvas that is 55x55.
- */
-p5.prototype.circle = function() {
-  var args = Array.prototype.slice.call(arguments, 0, 2);
-  args.push(2 * arguments[2]);
-  args.push(2 * arguments[2]);
-  this.ellipse.apply(this, args);
-};
-
 /**
  * Draws a line (a direct path between two points) to the screen. The version
  * of <a href="#/p5/line">line()</a> with four parameters draws the line in 2D. To color a line, use
@@ -25694,7 +25529,7 @@ p5.prototype.line = function() {
  * @method point
  * @param  {Number} x the x-coordinate
  * @param  {Number} y the y-coordinate
- * @param  {Number} [z] the z-coordinate (for WebGL mode)
+ * @param  {Number} [z] the z-coordinate (for WEBGL mode)
  * @chainable
  * @example
  * <div>
@@ -25830,8 +25665,8 @@ p5.prototype.quad = function() {
  * @param  {Number} y
  * @param  {Number} w
  * @param  {Number} h
- * @param  {Integer} [detailX] number of segments in the x-direction (for WebGL mode)
- * @param  {Integer} [detailY] number of segments in the y-direction (for WebGL mode)
+ * @param  {Integer} [detailX] number of segments in the x-direction
+ * @param  {Integer} [detailY] number of segments in the y-direction
  * @chainable
  */
 p5.prototype.rect = function() {
@@ -25855,63 +25690,6 @@ p5.prototype.rect = function() {
   }
 
   return this;
-};
-
-/**
- * Draws a square to the screen. A square is a four-sided shape with
- * every angle at ninety degrees, and equal side size.
- * This function is a special case of the rect() function, where the width and height are the same, and the parameter is called "s" for side size.
- * By default, the first two parameters set the location of the upper-left corner, the third sets the side size of the square.
- * The way these parameters are interpreted, however,
- * may be changed with the <a href="#/p5/rectMode">rectMode()</a> function.
- * <br><br>
- * The fourth, fifth, sixth and seventh parameters, if specified,
- * determine corner radius for the top-left, top-right, lower-right and
- * lower-left corners, respectively. An omitted corner radius parameter is set
- * to the value of the previously specified radius value in the parameter list.
- *
- * @method square
- * @param  {Number} x  x-coordinate of the square.
- * @param  {Number} y  y-coordinate of the square.
- * @param  {Number} s  side size of the square.
- * @param  {Number} [tl] optional radius of top-left corner.
- * @param  {Number} [tr] optional radius of top-right corner.
- * @param  {Number} [br] optional radius of bottom-right corner.
- * @param  {Number} [bl] optional radius of bottom-left corner.
- * @chainable
- * @example
- * <div>
- * <code>
- * // Draw a square at location (30, 20) with a side size of 55.
- * square(30, 20, 55);
- * </code>
- * </div>
- *
- * <div>
- * <code>
- * // Draw a square with rounded corners, each having a radius of 20.
- * square(30, 20, 55, 20);
- * </code>
- * </div>
- *
- * <div>
- * <code>
- * // Draw a square with rounded corners having the following radii:
- * // top-left = 20, top-right = 15, bottom-right = 10, bottom-left = 5.
- * square(30, 20, 55, 20, 15, 10, 5);
- * </code>
- * </div>
- *
- * @alt
- * 55x55 white square with black outline in mid-right of canvas.
- * 55x55 white square with black outline and rounded edges in mid-right of canvas.
- * 55x55 white square with black outline and rounded edges of different radii.
- */
-p5.prototype.square = function() {
-  var args = Array.prototype.slice.call(arguments, 0, 3);
-  args.push(arguments[2]);
-  args = args.concat(Array.prototype.slice.call(arguments, 4));
-  this.rect.apply(this, args);
 };
 
 /**
@@ -25950,7 +25728,7 @@ p5.prototype.triangle = function() {
 
 module.exports = p5;
 
-},{"../constants":17,"../error_helpers":19,"../helpers":20,"../main":23}],30:[function(_dereq_,module,exports){
+},{"../constants":18,"../error_helpers":20,"../helpers":21,"../main":24}],31:[function(_dereq_,module,exports){
 /**
  * @module Shape
  * @submodule Attributes
@@ -26298,7 +26076,7 @@ p5.prototype.strokeWeight = function(w) {
 
 module.exports = p5;
 
-},{"../constants":17,"../main":23}],31:[function(_dereq_,module,exports){
+},{"../constants":18,"../main":24}],32:[function(_dereq_,module,exports){
 /**
  * @module Shape
  * @submodule Curves
@@ -26456,21 +26234,21 @@ p5.prototype.bezierDetail = function(d) {
  * <div>
  * <code>
  * noFill();
- * let x1 = 85,
+ * var x1 = 85,
   x2 = 10,
   x3 = 90,
   x4 = 15;
- * let y1 = 20,
+ * var y1 = 20,
   y2 = 10,
   y3 = 90,
   y4 = 80;
  * bezier(x1, y1, x2, y2, x3, y3, x4, y4);
  * fill(255);
- * let steps = 10;
- * for (let i = 0; i <= steps; i++) {
- *   let t = i / steps;
- *   let x = bezierPoint(x1, x2, x3, x4, t);
- *   let y = bezierPoint(y1, y2, y3, y4, t);
+ * var steps = 10;
+ * for (var i = 0; i <= steps; i++) {
+ *   var t = i / steps;
+ *   var x = bezierPoint(x1, x2, x3, x4, t);
+ *   var y = bezierPoint(y1, y2, y3, y4, t);
  *   ellipse(x, y, 5, 5);
  * }
  * </code>
@@ -26510,18 +26288,18 @@ p5.prototype.bezierPoint = function(a, b, c, d, t) {
  * <code>
  * noFill();
  * bezier(85, 20, 10, 10, 90, 90, 15, 80);
- * let steps = 6;
+ * var steps = 6;
  * fill(255);
- * for (let i = 0; i <= steps; i++) {
- *   let t = i / steps;
+ * for (var i = 0; i <= steps; i++) {
+ *   var t = i / steps;
  *   // Get the location of the point
- *   let x = bezierPoint(85, 10, 90, 15, t);
- *   let y = bezierPoint(20, 10, 90, 80, t);
+ *   var x = bezierPoint(85, 10, 90, 15, t);
+ *   var y = bezierPoint(20, 10, 90, 80, t);
  *   // Get the tangent points
- *   let tx = bezierTangent(85, 10, 90, 15, t);
- *   let ty = bezierTangent(20, 10, 90, 80, t);
+ *   var tx = bezierTangent(85, 10, 90, 15, t);
+ *   var ty = bezierTangent(20, 10, 90, 80, t);
  *   // Calculate an angle from the tangent points
- *   let a = atan2(ty, tx);
+ *   var a = atan2(ty, tx);
  *   a += PI;
  *   stroke(255, 102, 0);
  *   line(x, y, cos(a) * 30 + x, sin(a) * 30 + y);
@@ -26539,14 +26317,14 @@ p5.prototype.bezierPoint = function(a, b, c, d, t) {
  * noFill();
  * bezier(85, 20, 10, 10, 90, 90, 15, 80);
  * stroke(255, 102, 0);
- * let steps = 16;
- * for (let i = 0; i <= steps; i++) {
- *   let t = i / steps;
- *   let x = bezierPoint(85, 10, 90, 15, t);
- *   let y = bezierPoint(20, 10, 90, 80, t);
- *   let tx = bezierTangent(85, 10, 90, 15, t);
- *   let ty = bezierTangent(20, 10, 90, 80, t);
- *   let a = atan2(ty, tx);
+ * var steps = 16;
+ * for (var i = 0; i <= steps; i++) {
+ *   var t = i / steps;
+ *   var x = bezierPoint(85, 10, 90, 15, t);
+ *   var y = bezierPoint(20, 10, 90, 80, t);
+ *   var tx = bezierTangent(85, 10, 90, 15, t);
+ *   var ty = bezierTangent(20, 10, 90, 80, t);
+ *   var a = atan2(ty, tx);
  *   a -= HALF_PI;
  *   line(x, y, cos(a) * 8 + x, sin(a) * 8 + y);
  * }
@@ -26606,9 +26384,9 @@ p5.prototype.bezierTangent = function(a, b, c, d, t) {
  * <div>
  * <code>
  * // Define the curve points as JavaScript objects
- * let p1 = { x: 5, y: 26 },
+ * var p1 = { x: 5, y: 26 },
   p2 = { x: 73, y: 24 };
- * let p3 = { x: 73, y: 61 },
+ * var p3 = { x: 73, y: 61 },
   p4 = { x: 15, y: 65 };
  * noFill();
  * stroke(255, 102, 0);
@@ -26672,7 +26450,7 @@ p5.prototype.curve = function() {
  * information.
  *
  * @method curveDetail
- * @param {Number} resolution resolution of the curves
+ * @param {Number} resolution of the curves
  * @chainable
  * @example
  * <div modernizr='webgl'>
@@ -26714,7 +26492,7 @@ p5.prototype.curveDetail = function(d) {
  * increase in magnitude, they will continue to deform.
  *
  * @method curveTightness
- * @param {Number} amount amount of deformation from the original vertices
+ * @param {Number} amount of deformation from the original vertices
  * @chainable
  * @example
  * <div>
@@ -26728,7 +26506,7 @@ p5.prototype.curveDetail = function(d) {
  *
  * function draw() {
  *   background(204);
- *   let t = map(mouseX, 0, width, -5, 5);
+ *   var t = map(mouseX, 0, width, -5, 5);
  *   curveTightness(t);
  *   beginShape();
  *   curveVertex(10, 26);
@@ -26773,11 +26551,11 @@ p5.prototype.curveTightness = function(t) {
  * curve(5, 26, 73, 24, 73, 61, 15, 65);
  * fill(255);
  * ellipseMode(CENTER);
- * let steps = 6;
- * for (let i = 0; i <= steps; i++) {
- *   let t = i / steps;
- *   let x = curvePoint(5, 5, 73, 73, t);
- *   let y = curvePoint(26, 26, 24, 61, t);
+ * var steps = 6;
+ * for (var i = 0; i <= steps; i++) {
+ *   var t = i / steps;
+ *   var x = curvePoint(5, 5, 73, 73, t);
+ *   var y = curvePoint(26, 26, 24, 61, t);
  *   ellipse(x, y, 5, 5);
  *   x = curvePoint(5, 73, 73, 15, t);
  *   y = curvePoint(26, 24, 61, 65, t);
@@ -26817,15 +26595,15 @@ p5.prototype.curvePoint = function(a, b, c, d, t) {
  * <code>
  * noFill();
  * curve(5, 26, 73, 24, 73, 61, 15, 65);
- * let steps = 6;
- * for (let i = 0; i <= steps; i++) {
- *   let t = i / steps;
- *   let x = curvePoint(5, 73, 73, 15, t);
- *   let y = curvePoint(26, 24, 61, 65, t);
+ * var steps = 6;
+ * for (var i = 0; i <= steps; i++) {
+ *   var t = i / steps;
+ *   var x = curvePoint(5, 73, 73, 15, t);
+ *   var y = curvePoint(26, 24, 61, 65, t);
  *   //ellipse(x, y, 5, 5);
- *   let tx = curveTangent(5, 73, 73, 15, t);
- *   let ty = curveTangent(26, 24, 61, 65, t);
- *   let a = atan2(ty, tx);
+ *   var tx = curveTangent(5, 73, 73, 15, t);
+ *   var ty = curveTangent(26, 24, 61, 65, t);
+ *   var a = atan2(ty, tx);
  *   a -= PI / 2.0;
  *   line(x, y, cos(a) * 8 + x, sin(a) * 8 + y);
  * }
@@ -26848,7 +26626,7 @@ p5.prototype.curveTangent = function(a, b, c, d, t) {
 
 module.exports = p5;
 
-},{"../error_helpers":19,"../main":23}],32:[function(_dereq_,module,exports){
+},{"../error_helpers":20,"../main":24}],33:[function(_dereq_,module,exports){
 /**
  * @module Shape
  * @submodule Vertex
@@ -27140,7 +26918,6 @@ p5.prototype.beginShape = function(kind) {
  * @param  {Number} x4 x-coordinate for the anchor point
  * @param  {Number} y4 y-coordinate for the anchor point
  * @chainable
- *
  * @example
  * <div>
  * <code>
@@ -27152,10 +26929,6 @@ p5.prototype.beginShape = function(kind) {
  * </code>
  * </div>
  *
- * @alt
- * crescent-shaped line in middle of canvas. Points facing left.
- *
- * @example
  * <div>
  * <code>
  * beginShape();
@@ -27167,8 +26940,21 @@ p5.prototype.beginShape = function(kind) {
  * </div>
  *
  * @alt
+ * crescent-shaped line in middle of canvas. Points facing left.
  * white crescent shape in middle of canvas. Points facing left.
- *
+ */
+/**
+ * @method bezierVertex
+ * @param  {Number} x2
+ * @param  {Number} y2
+ * @param  {Number} [z2] z-coordinate for the first control point (for WebGL mode)
+ * @param  {Number} x3
+ * @param  {Number} y3
+ * @param  {Number} [z3] z-coordinate for the second control point (for WebGL mode)
+ * @param  {Number} x4
+ * @param  {Number} y4
+ * @param  {Number} [z4] z-coordinate for the anchor point (for WebGL mode)
+ * @chainable
  * @example
  * <div>
  * <code>
@@ -27206,29 +26992,13 @@ p5.prototype.beginShape = function(kind) {
  * crescent shape in middle of canvas with another crescent shape on positive z-axis.
  */
 
-/**
- * @method bezierVertex
- * @param  {Number} x2
- * @param  {Number} y2
- * @param  {Number} z2 z-coordinate for the first control point (for WebGL mode)
- * @param  {Number} x3
- * @param  {Number} y3
- * @param  {Number} z3 z-coordinate for the second control point (for WebGL mode)
- * @param  {Number} x4
- * @param  {Number} y4
- * @param  {Number} z4 z-coordinate for the anchor point (for WebGL mode)
- * @chainable
- */
 p5.prototype.bezierVertex = function() {
   p5._validateParameters('bezierVertex', arguments);
   if (this._renderer.isP3D) {
     this._renderer.bezierVertex.apply(this._renderer, arguments);
   } else {
     if (vertices.length === 0) {
-      p5._friendlyError(
-        'vertex() must be used once before calling bezierVertex()',
-        'bezierVertex'
-      );
+      throw 'vertex() must be used once before calling bezierVertex()';
     } else {
       isBezier = true;
       var vert = [];
@@ -27522,7 +27292,6 @@ p5.prototype.endShape = function(mode) {
  * @param  {Number} x3 x-coordinate for the anchor point
  * @param  {Number} y3 y-coordinate for the anchor point
  * @chainable
- *
  * @example
  * <div>
  * <code>
@@ -27565,19 +27334,16 @@ p5.prototype.endShape = function(mode) {
  * @alt
  * arched-shaped black line with 4 pixel thick stroke weight.
  * backwards s-shaped black line with 4 pixel thick stroke weight.
- *
  */
-
 /**
  * @method quadraticVertex
  * @param  {Number} cx
  * @param  {Number} cy
- * @param  {Number} cz z-coordinate for the control point (for WebGL mode)
+ * @param  {Number} [cz] z-coordinate for the control point (for WebGL mode)
  * @param  {Number} x3
  * @param  {Number} y3
- * @param  {Number} z3 z-coordinate for the anchor point (for WebGL mode)
+ * @param  {Number} [z3] z-coordinate for the anchor point (for WebGL mode)
  * @chainable
- *
  * @example
  * <div>
  * <code>
@@ -27652,9 +27418,8 @@ p5.prototype.quadraticVertex = function() {
         vertices.push(vert);
       }
     } else {
-      p5._friendlyError(
-        'vertex() must be used once before calling quadraticVertex()',
-        'quadraticVertex'
+      throw new Error(
+        'vertex() must be used once before calling quadraticVertex()'
       );
     }
   }
@@ -27788,7 +27553,7 @@ p5.prototype.vertex = function(x, y, moveTo, u, v) {
 
 module.exports = p5;
 
-},{"../constants":17,"../main":23}],33:[function(_dereq_,module,exports){
+},{"../constants":18,"../main":24}],34:[function(_dereq_,module,exports){
 'use strict';
 
 // requestAnim shim layer by Paul Irish
@@ -27890,7 +27655,7 @@ window.requestAnimationFrame = (function() {
   }
 })();
 
-},{}],34:[function(_dereq_,module,exports){
+},{}],35:[function(_dereq_,module,exports){
 /**
  * @module Structure
  * @submodule Structure
@@ -27933,7 +27698,7 @@ var p5 = _dereq_('./main');
  * </code></div>
  *
  * <div><code>
- * let x = 0;
+ * var x = 0;
  * function setup() {
  *   createCanvas(100, 100);
  * }
@@ -27972,7 +27737,7 @@ p5.prototype.noLoop = function() {
  * @method loop
  * @example
  * <div><code>
- * let x = 0;
+ * var x = 0;
  * function setup() {
  *   createCanvas(100, 100);
  *   noLoop();
@@ -28158,7 +27923,7 @@ p5.prototype.pop = function() {
  * @param  {Integer} [n] Redraw for n-times. The default value is 1.
  * @example
  * <div><code>
- * let x = 0;
+ * var x = 0;
  *
  * function setup() {
  *   createCanvas(100, 100);
@@ -28177,7 +27942,7 @@ p5.prototype.pop = function() {
  * </code></div>
  *
  * <div class='norender'><code>
- * let x = 0;
+ * var x = 0;
  *
  * function setup() {
  *   createCanvas(100, 100);
@@ -28231,7 +27996,7 @@ p5.prototype.redraw = function(n) {
 
 module.exports = p5;
 
-},{"./main":23}],35:[function(_dereq_,module,exports){
+},{"./main":24}],36:[function(_dereq_,module,exports){
 /**
  * @module Transform
  * @submodule Transform
@@ -28746,7 +28511,7 @@ p5.prototype.translate = function(x, y, z) {
 
 module.exports = p5;
 
-},{"./main":23}],36:[function(_dereq_,module,exports){
+},{"./main":24}],37:[function(_dereq_,module,exports){
 /**
  * @module Data
  * @submodule Dictionary
@@ -29078,22 +28843,16 @@ p5.TypedDict.prototype.print = function() {
  * @example
  * <div>
  * <code>
- * function setup() {
- *   createCanvas(100, 100);
- *   background(200);
- *   text('click here to save', 10, 10, 70, 80);
- * }
- *
- * function mousePressed() {
- *   if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+ * createButton('save')
+ *   .position(10, 10)
+ *   .mousePressed(function() {
  *     createStringDict({
  *       john: 1940,
  *       paul: 1942,
  *       george: 1943,
  *       ringo: 1940
  *     }).saveTable('beatles');
- *   }
- * }
+ *   });
  * </code>
  * </div>
  */
@@ -29116,22 +28875,16 @@ p5.TypedDict.prototype.saveTable = function(filename) {
  * @example
  * <div>
  * <code>
- * function setup() {
- *   createCanvas(100, 100);
- *   background(200);
- *   text('click here to save', 10, 10, 70, 80);
- * }
- *
- * function mousePressed() {
- *   if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+ * createButton('save')
+ *   .position(10, 10)
+ *   .mousePressed(function() {
  *     createStringDict({
  *       john: 1940,
  *       paul: 1942,
  *       george: 1943,
  *       ringo: 1940
  *     }).saveJSON('beatles');
- *   }
- * }
+ *   });
  * </code>
  * </div>
  */
@@ -29434,7 +29187,7 @@ p5.NumberDict.prototype.maxKey = function() {
 
 module.exports = p5.TypedDict;
 
-},{"../core/main":23}],37:[function(_dereq_,module,exports){
+},{"../core/main":24}],38:[function(_dereq_,module,exports){
 /**
  * @module Events
  * @submodule Acceleration
@@ -29463,20 +29216,6 @@ p5.prototype.deviceOrientation = undefined;
  *
  * @property {Number} accelerationX
  * @readOnly
- * @example
- * <div>
- * <code>
- * // Move a touchscreen device to register
- * // acceleration changes.
- * function draw() {
- *   background(220, 50);
- *   fill('magenta');
- *   ellipse(width / 2, height / 2, accelerationX);
- * }
- * </code>
- * </div>
- * @alt
- * Magnitude of device acceleration is displayed as ellipse size
  */
 p5.prototype.accelerationX = 0;
 
@@ -29486,20 +29225,6 @@ p5.prototype.accelerationX = 0;
  *
  * @property {Number} accelerationY
  * @readOnly
- * @example
- * <div>
- * <code>
- * // Move a touchscreen device to register
- * // acceleration changes.
- * function draw() {
- *   background(220, 50);
- *   fill('magenta');
- *   ellipse(width / 2, height / 2, accelerationY);
- * }
- * </code>
- * </div>
- * @alt
- * Magnitude of device acceleration is displayed as ellipse size
  */
 p5.prototype.accelerationY = 0;
 
@@ -29509,22 +29234,6 @@ p5.prototype.accelerationY = 0;
  *
  * @property {Number} accelerationZ
  * @readOnly
- *
- * @example
- * <div>
- * <code>
- * // Move a touchscreen device to register
- * // acceleration changes.
- * function draw() {
- *   background(220, 50);
- *   fill('magenta');
- *   ellipse(width / 2, height / 2, accelerationZ);
- * }
- * </code>
- * </div>
- *
- * @alt
- * Magnitude of device acceleration is displayed as ellipse size
  */
 p5.prototype.accelerationZ = 0;
 
@@ -29577,8 +29286,6 @@ p5.prototype._updatePAccelerations = function() {
  * together, it must be called in the order Z-X-Y or there might be
  * unexpected behaviour.
  *
- * @property {Number} rotationX
- * @readOnly
  * @example
  * <div>
  * <code>
@@ -29595,8 +29302,13 @@ p5.prototype._updatePAccelerations = function() {
  * }
  * </code>
  * </div>
+ *
+ * @property {Number} rotationX
+ * @readOnly
+ *
  * @alt
  * red horizontal line right, green vertical line bottom. black background.
+ *
  */
 p5.prototype.rotationX = 0;
 
@@ -29608,8 +29320,6 @@ p5.prototype.rotationX = 0;
  * together, it must be called in the order Z-X-Y or there might be
  * unexpected behaviour.
  *
- * @property {Number} rotationY
- * @readOnly
  * @example
  * <div>
  * <code>
@@ -29626,6 +29336,10 @@ p5.prototype.rotationX = 0;
  * }
  * </code>
  * </div>
+ *
+ * @property {Number} rotationY
+ * @readOnly
+ *
  * @alt
  * red horizontal line right, green vertical line bottom. black background.
  */
@@ -29684,14 +29398,14 @@ p5.prototype.rotationZ = 0;
  *
  * // Some extra logic is needed to account for cases where
  * // the angles wrap around.
- * let rotateDirection = 'clockwise';
+ * var rotateDirection = 'clockwise';
  *
  * // Simple range conversion to make things simpler.
  * // This is not absolutely necessary but the logic
  * // will be different in that case.
  *
- * let rX = rotationX + 180;
- * let pRX = pRotationX + 180;
+ * var rX = rotationX + 180;
+ * var pRX = pRotationX + 180;
  *
  * if ((rX - pRX > 0 && rX - pRX < 270) || rX - pRX < -270) {
  *   rotateDirection = 'clockwise';
@@ -29729,14 +29443,14 @@ p5.prototype.pRotationX = 0;
  *
  * // Some extra logic is needed to account for cases where
  * // the angles wrap around.
- * let rotateDirection = 'clockwise';
+ * var rotateDirection = 'clockwise';
  *
  * // Simple range conversion to make things simpler.
  * // This is not absolutely necessary but the logic
  * // will be different in that case.
  *
- * let rY = rotationY + 180;
- * let pRY = pRotationY + 180;
+ * var rY = rotationY + 180;
+ * var pRY = pRotationY + 180;
  *
  * if ((rY - pRY > 0 && rY - pRY < 270) || rY - pRY < -270) {
  *   rotateDirection = 'clockwise';
@@ -29773,7 +29487,7 @@ p5.prototype.pRotationY = 0;
  *
  * // Some extra logic is needed to account for cases where
  * // the angles wrap around.
- * let rotateDirection = 'clockwise';
+ * var rotateDirection = 'clockwise';
  *
  * if (
  *   (rotationZ - pRotationZ > 0 && rotationZ - pRotationZ < 270) ||
@@ -29815,38 +29529,8 @@ p5.prototype._updatePRotations = function() {
 };
 
 /**
- * When a device is rotated, the axis that triggers the <a href="#/p5/deviceTurned">deviceTurned()</a>
- * method is stored in the turnAxis variable. The turnAxis variable is only defined within
- * the scope of deviceTurned().
  * @property {String} turnAxis
  * @readOnly
- * @example
- * <div>
- * <code>
- * // Run this example on a mobile device
- * // Rotate the device by 90 degrees in the
- * // X-axis to change the value.
- *
- * var value = 0;
- * function draw() {
- *   fill(value);
- *   rect(25, 25, 50, 50);
- * }
- * function deviceTurned() {
- *   if (turnAxis === 'X') {
- *     if (value === 0) {
- *       value = 255;
- *     } else if (value === 255) {
- *       value = 0;
- *     }
- *   }
- * }
- * </code>
- * </div>
- *
- * @alt
- * 50x50 black rect in center of canvas. turns white on mobile when device turns
- * 50x50 black rect in center of canvas. turns white on mobile when x-axis turns
  */
 p5.prototype.turnAxis = undefined;
 
@@ -29866,8 +29550,8 @@ var shake_threshold = 30;
  * // You will need to move the device incrementally further
  * // the closer the square's color gets to white in order to change the value.
  *
- * let value = 0;
- * let threshold = 0.5;
+ * var value = 0;
+ * var threshold = 0.5;
  * function setup() {
  *   setMoveThreshold(threshold);
  * }
@@ -29909,8 +29593,8 @@ p5.prototype.setMoveThreshold = function(val) {
  * // You will need to shake the device more firmly
  * // the closer the box's fill gets to white in order to change the value.
  *
- * let value = 0;
- * let threshold = 30;
+ * var value = 0;
+ * var threshold = 30;
  * function setup() {
  *   setShakeThreshold(threshold);
  * }
@@ -29942,9 +29626,8 @@ p5.prototype.setShakeThreshold = function(val) {
 
 /**
  * The <a href="#/p5/deviceMoved">deviceMoved()</a> function is called when the device is moved by more than
- * the threshold value along X, Y or Z axis. The default threshold is set to 0.5.
- * The threshold value can be changed using <a href="https://p5js.org/reference/#/p5/setMoveThreshold">setMoveThreshold()</a>.
- *
+ * the threshold value along X, Y or Z axis. The default threshold is set to
+ * 0.5.
  * @method deviceMoved
  * @example
  * <div class="norender">
@@ -29953,7 +29636,7 @@ p5.prototype.setShakeThreshold = function(val) {
  * // Move the device around
  * // to change the value.
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -29988,7 +29671,7 @@ p5.prototype.setShakeThreshold = function(val) {
  * // Rotate the device by 90 degrees
  * // to change the value.
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -30008,7 +29691,7 @@ p5.prototype.setShakeThreshold = function(val) {
  * // Rotate the device by 90 degrees in the
  * // X-axis to change the value.
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -30035,8 +29718,6 @@ p5.prototype.setShakeThreshold = function(val) {
  * The <a href="#/p5/deviceShaken">deviceShaken()</a> function is called when the device total acceleration
  * changes of accelerationX and accelerationY values is more than
  * the threshold value. The default threshold is set to 30.
- * The threshold value can be changed using <a href="https://p5js.org/reference/#/p5/setShakeThreshold">setShakeThreshold()</a>.
- *
  * @method deviceShaken
  * @example
  * <div class="norender">
@@ -30044,7 +29725,7 @@ p5.prototype.setShakeThreshold = function(val) {
  * // Run this example on a mobile device
  * // Shake the device to change the value.
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -30185,7 +29866,7 @@ p5.prototype._handleMotion = function() {
 
 module.exports = p5;
 
-},{"../core/main":23}],38:[function(_dereq_,module,exports){
+},{"../core/main":24}],39:[function(_dereq_,module,exports){
 /**
  * @module Events
  * @submodule Keyboard
@@ -30270,7 +29951,7 @@ p5.prototype.key = '';
  * @readOnly
  * @example
  * <div><code>
- * let fillVal = 126;
+ * var fillVal = 126;
  * function draw() {
  *   fill(fillVal);
  *   rect(25, 25, 50, 50);
@@ -30300,7 +29981,7 @@ p5.prototype.keyCode = 0;
  * equals BACKSPACE, DELETE, ENTER, RETURN, TAB, ESCAPE, SHIFT, CONTROL,
  * OPTION, ALT, UP_ARROW, DOWN_ARROW, LEFT_ARROW, RIGHT_ARROW.
  * <br><br>
- * For ASCII keys, the key that was pressed is stored in the key variable. However, it
+ * For ASCII keys that was pressed is stored in the key variable. However, it
  * does not distinguish between uppercase and lowercase. For this reason, it
  * is recommended to use <a href="#/p5/keyTyped">keyTyped()</a> to read the key variable, in which the
  * case of the variable will be distinguished.
@@ -30317,7 +29998,7 @@ p5.prototype.keyCode = 0;
  * @example
  * <div>
  * <code>
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -30333,7 +30014,7 @@ p5.prototype.keyCode = 0;
  * </div>
  * <div>
  * <code>
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -30390,7 +30071,7 @@ p5.prototype._onkeydown = function(e) {
  * @example
  * <div>
  * <code>
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -30448,7 +30129,7 @@ p5.prototype._onkeyup = function(e) {
  * @example
  * <div>
  * <code>
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -30508,8 +30189,8 @@ p5.prototype._onblur = function(e) {
  * @return {Boolean}        whether key is down or not
  * @example
  * <div><code>
- * let x = 100;
- * let y = 100;
+ * var x = 100;
+ * var y = 100;
  *
  * function setup() {
  *   createCanvas(512, 512);
@@ -30539,7 +30220,7 @@ p5.prototype._onblur = function(e) {
  * </code></div>
  *
  * <div><code>
- * let diameter = 50;
+ * var diameter = 50;
  *
  * function setup() {
  *   createCanvas(512, 512);
@@ -30592,7 +30273,7 @@ function areDownKeys() {
 
 module.exports = p5;
 
-},{"../core/main":23}],39:[function(_dereq_,module,exports){
+},{"../core/main":24}],40:[function(_dereq_,module,exports){
 /**
  * @module Events
  * @submodule Mouse
@@ -30739,7 +30420,7 @@ p5.prototype.pmouseY = 0;
  * @example
  * <div>
  * <code>
- * let myCanvas;
+ * var myCanvas;
  *
  * function setup() {
  *   //use a variable to store a pointer to the canvas
@@ -30776,7 +30457,7 @@ p5.prototype.winMouseX = 0;
  * @example
  * <div>
  * <code>
- * let myCanvas;
+ * var myCanvas;
  *
  * function setup() {
  *   //use a variable to store a pointer to the canvas
@@ -30815,7 +30496,7 @@ p5.prototype.winMouseY = 0;
  * @example
  * <div>
  * <code>
- * let myCanvas;
+ * var myCanvas;
  *
  * function setup() {
  *   //use a variable to store a pointer to the canvas
@@ -30828,7 +30509,7 @@ p5.prototype.winMouseY = 0;
  *   clear();
  *   //the difference between previous and
  *   //current x position is the horizontal mouse speed
- *   let speed = abs(winMouseX - pwinMouseX);
+ *   var speed = abs(winMouseX - pwinMouseX);
  *   //change the size of the circle
  *   //according to the horizontal speed
  *   ellipse(50, 50, 10 + speed * 5, 10 + speed * 5);
@@ -30857,7 +30538,7 @@ p5.prototype.pwinMouseX = 0;
  * @example
  * <div>
  * <code>
- * let myCanvas;
+ * var myCanvas;
  *
  * function setup() {
  *   //use a variable to store a pointer to the canvas
@@ -30870,7 +30551,7 @@ p5.prototype.pwinMouseX = 0;
  *   clear();
  *   //the difference between previous and
  *   //current y position is the vertical mouse speed
- *   let speed = abs(winMouseY - pwinMouseY);
+ *   var speed = abs(winMouseY - pwinMouseY);
  *   //change the size of the circle
  *   //according to the vertical speed
  *   ellipse(50, 50, 10 + speed * 5, 10 + speed * 5);
@@ -31024,14 +30705,13 @@ p5.prototype._setMouseButton = function(e) {
  * behavior for this event, add "return false" to the end of the method.
  *
  * @method mouseMoved
- * @param  {Object} [event] optional MouseEvent callback argument.
  * @example
  * <div>
  * <code>
  * // Move the mouse across the page
  * // to change its value
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -31051,16 +30731,6 @@ p5.prototype._setMouseButton = function(e) {
  *   ellipse(mouseX, mouseY, 5, 5);
  *   // prevent default
  *   return false;
- * }
- * </code>
- * </div>
- *
- * <div class="norender">
- * <code>
- * // returns a MouseEvent object
- * // as a callback argument
- * function mouseMoved(event) {
- *   console.log(event);
  * }
  * </code>
  * </div>
@@ -31080,14 +30750,13 @@ p5.prototype._setMouseButton = function(e) {
  * behavior for this event, add "return false" to the end of the method.
  *
  * @method mouseDragged
- * @param  {Object} [event] optional MouseEvent callback argument.
  * @example
  * <div>
  * <code>
  * // Drag the mouse across the page
  * // to change its value
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -31107,16 +30776,6 @@ p5.prototype._setMouseButton = function(e) {
  *   ellipse(mouseX, mouseY, 5, 5);
  *   // prevent default
  *   return false;
- * }
- * </code>
- * </div>
- *
- * <div class="norender">
- * <code>
- * // returns a MouseEvent object
- * // as a callback argument
- * function mouseDragged(event) {
- *   console.log(event);
  * }
  * </code>
  * </div>
@@ -31163,14 +30822,13 @@ p5.prototype._onmousemove = function(e) {
  * behavior for this event, add "return false" to the end of the method.
  *
  * @method mousePressed
- * @param  {Object} [event] optional MouseEvent callback argument.
  * @example
  * <div>
  * <code>
  * // Click within the image to change
  * // the value of the rectangle
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -31191,16 +30849,6 @@ p5.prototype._onmousemove = function(e) {
  *   ellipse(mouseX, mouseY, 5, 5);
  *   // prevent default
  *   return false;
- * }
- * </code>
- * </div>
- *
- * <div class="norender">
- * <code>
- * // returns a MouseEvent object
- * // as a callback argument
- * function mousePressed(event) {
- *   console.log(event);
  * }
  * </code>
  * </div>
@@ -31239,7 +30887,6 @@ p5.prototype._onmousedown = function(e) {
  *
  *
  * @method mouseReleased
- * @param  {Object} [event] optional MouseEvent callback argument.
  * @example
  * <div>
  * <code>
@@ -31247,7 +30894,7 @@ p5.prototype._onmousedown = function(e) {
  * // the value of the rectangle
  * // after the mouse has been clicked
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -31268,16 +30915,6 @@ p5.prototype._onmousedown = function(e) {
  *   ellipse(mouseX, mouseY, 5, 5);
  *   // prevent default
  *   return false;
- * }
- * </code>
- * </div>
- *
- * <div class="norender">
- * <code>
- * // returns a MouseEvent object
- * // as a callback argument
- * function mouseReleased(event) {
- *   console.log(event);
  * }
  * </code>
  * </div>
@@ -31318,7 +30955,6 @@ p5.prototype._ondragover = p5.prototype._onmousemove;
  * behavior for this event, add "return false" to the end of the method.
  *
  * @method mouseClicked
- * @param  {Object} [event] optional MouseEvent callback argument.
  * @example
  * <div>
  * <code>
@@ -31326,7 +30962,7 @@ p5.prototype._ondragover = p5.prototype._onmousemove;
  * // the value of the rectangle
  * // after the mouse has been clicked
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -31348,16 +30984,6 @@ p5.prototype._ondragover = p5.prototype._onmousemove;
  *   ellipse(mouseX, mouseY, 5, 5);
  *   // prevent default
  *   return false;
- * }
- * </code>
- * </div>
- *
- * <div class="norender">
- * <code>
- * // returns a MouseEvent object
- * // as a callback argument
- * function mouseClicked(event) {
- *   console.log(event);
  * }
  * </code>
  * </div>
@@ -31387,7 +31013,6 @@ p5.prototype._onclick = function(e) {
  * https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
  *
  * @method doubleClicked
- * @param  {Object} [event] optional MouseEvent callback argument.
  * @example
  * <div>
  * <code>
@@ -31395,7 +31020,7 @@ p5.prototype._onclick = function(e) {
  * // the value of the rectangle
  * // after the mouse has been double clicked
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -31417,16 +31042,6 @@ p5.prototype._onclick = function(e) {
  *   ellipse(mouseX, mouseY, 5, 5);
  *   // prevent default
  *   return false;
- * }
- * </code>
- * </div>
- *
- * <div class="norender">
- * <code>
- * // returns a MouseEvent object
- * // as a callback argument
- * function doubleClicked(event) {
- *   console.log(event);
  * }
  * </code>
  * </div>
@@ -31477,12 +31092,11 @@ p5.prototype._pmouseWheelDeltaY = 0;
  * may only work as expected if "return false" is included while using Safari.
  *
  * @method mouseWheel
- * @param  {Object} [event] optional WheelEvent callback argument.
  *
  * @example
  * <div>
  * <code>
- * let pos = 25;
+ * var pos = 25;
  *
  * function draw() {
  *   background(237, 34, 93);
@@ -31518,7 +31132,7 @@ p5.prototype._onwheel = function(e) {
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/main":23}],40:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24}],41:[function(_dereq_,module,exports){
 /**
  * @module Events
  * @submodule Touch
@@ -31550,7 +31164,7 @@ var p5 = _dereq_('../core/main');
  * // at the same time
  * function draw() {
  *   clear();
- *   let display = touches.length + ' touches';
+ *   var display = touches.length + ' touches';
  *   text(display, 5, 10);
  * }
  * </code>
@@ -31601,14 +31215,13 @@ function getTouchInfo(canvas, w, h, e, i) {
  * to the end of the method.
  *
  * @method touchStarted
- * @param  {Object} [event] optional TouchEvent callback argument.
  * @example
  * <div>
  * <code>
  * // Touch within the image to change
  * // the value of the rectangle
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -31629,16 +31242,6 @@ function getTouchInfo(canvas, w, h, e, i) {
  *   ellipse(mouseX, mouseY, 5, 5);
  *   // prevent default
  *   return false;
- * }
- * </code>
- * </div>
- *
- * <div class="norender">
- * <code>
- * // returns a TouchEvent object
- * // as a callback argument
- * function touchStarted(event) {
- *   console.log(event);
  * }
  * </code>
  * </div>
@@ -31676,14 +31279,13 @@ p5.prototype._ontouchstart = function(e) {
  * to the end of the method.
  *
  * @method touchMoved
- * @param  {Object} [event] optional TouchEvent callback argument.
  * @example
  * <div>
  * <code>
  * // Move your finger across the page
  * // to change its value
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -31703,16 +31305,6 @@ p5.prototype._ontouchstart = function(e) {
  *   ellipse(mouseX, mouseY, 5, 5);
  *   // prevent default
  *   return false;
- * }
- * </code>
- * </div>
- *
- * <div class="norender">
- * <code>
- * // returns a TouchEvent object
- * // as a callback argument
- * function touchMoved(event) {
- *   console.log(event);
  * }
  * </code>
  * </div>
@@ -31749,14 +31341,13 @@ p5.prototype._ontouchmove = function(e) {
  * to the end of the method.
  *
  * @method touchEnded
- * @param  {Object} [event] optional TouchEvent callback argument.
  * @example
  * <div>
  * <code>
  * // Release touch within the image to
  * // change the value of the rectangle
  *
- * let value = 0;
+ * var value = 0;
  * function draw() {
  *   fill(value);
  *   rect(25, 25, 50, 50);
@@ -31777,16 +31368,6 @@ p5.prototype._ontouchmove = function(e) {
  *   ellipse(mouseX, mouseY, 5, 5);
  *   // prevent default
  *   return false;
- * }
- * </code>
- * </div>
- *
- * <div class="norender">
- * <code>
- * // returns a TouchEvent object
- * // as a callback argument
- * function touchEnded(event) {
- *   console.log(event);
  * }
  * </code>
  * </div>
@@ -31817,7 +31398,7 @@ p5.prototype._ontouchend = function(e) {
 
 module.exports = p5;
 
-},{"../core/main":23}],41:[function(_dereq_,module,exports){
+},{"../core/main":24}],42:[function(_dereq_,module,exports){
 /*global ImageData:false */
 
 /**
@@ -32427,7 +32008,7 @@ Filters.blur = function(canvas, radius) {
 
 module.exports = Filters;
 
-},{}],42:[function(_dereq_,module,exports){
+},{}],43:[function(_dereq_,module,exports){
 /**
  * @module Image
  * @submodule Image
@@ -32473,10 +32054,10 @@ var p5 = _dereq_('../core/main');
  * @example
  * <div>
  * <code>
- * let img = createImage(66, 66);
+ * var img = createImage(66, 66);
  * img.loadPixels();
- * for (let i = 0; i < img.width; i++) {
- *   for (let j = 0; j < img.height; j++) {
+ * for (var i = 0; i < img.width; i++) {
+ *   for (var j = 0; j < img.height; j++) {
  *     img.set(i, j, color(0, 90, 102));
  *   }
  * }
@@ -32487,10 +32068,10 @@ var p5 = _dereq_('../core/main');
  *
  * <div>
  * <code>
- * let img = createImage(66, 66);
+ * var img = createImage(66, 66);
  * img.loadPixels();
- * for (let i = 0; i < img.width; i++) {
- *   for (let j = 0; j < img.height; j++) {
+ * for (var i = 0; i < img.width; i++) {
+ *   for (var j = 0; j < img.height; j++) {
  *     img.set(i, j, color(0, 90, 102, (i % img.width) * 2));
  *   }
  * }
@@ -32502,12 +32083,12 @@ var p5 = _dereq_('../core/main');
  *
  * <div>
  * <code>
- * let pink = color(255, 102, 204);
- * let img = createImage(66, 66);
+ * var pink = color(255, 102, 204);
+ * var img = createImage(66, 66);
  * img.loadPixels();
- * let d = pixelDensity();
- * let halfImage = 4 * (img.width * d) * (img.height / 2 * d);
- * for (let i = 0; i < halfImage; i += 4) {
+ * var d = pixelDensity();
+ * var halfImage = 4 * (img.width * d) * (img.height / 2 * d);
+ * for (var i = 0; i < halfImage; i += 4) {
  *   img.pixels[i] = red(pink);
  *   img.pixels[i + 1] = green(pink);
  *   img.pixels[i + 2] = blue(pink);
@@ -32542,7 +32123,7 @@ p5.prototype.createImage = function(width, height) {
  *  @example
  * <div class='norender notest'><code>
  * function setup() {
- *   let c = createCanvas(100, 100);
+ *   var c = createCanvas(100, 100);
  *   background(255, 0, 0);
  *   saveCanvas(c, 'myCanvas', 'jpg');
  * }
@@ -32551,7 +32132,7 @@ p5.prototype.createImage = function(width, height) {
  * // note that this example has the same result as above
  * // if no canvas is specified, defaults to main canvas
  * function setup() {
- *   let c = createCanvas(100, 100);
+ *   var c = createCanvas(100, 100);
  *   background(255, 0, 0);
  *   saveCanvas('myCanvas', 'jpg');
  *
@@ -32655,7 +32236,7 @@ p5.prototype.saveCanvas = function() {
  * }
  *
  * function mousePressed() {
- *   saveFrames('out', 'png', 1, 25, data => {
+ *   saveFrames('out', 'png', 1, 25, function(data) {
  *     print(data);
  *   });
  * }
@@ -32735,7 +32316,7 @@ p5.prototype._makeFrame = function(filename, extension, _cnv) {
 
 module.exports = p5;
 
-},{"../core/main":23}],43:[function(_dereq_,module,exports){
+},{"../core/main":24}],44:[function(_dereq_,module,exports){
 /**
  * @module Image
  * @submodule Loading & Displaying
@@ -32776,7 +32357,7 @@ _dereq_('../core/error_helpers');
  * @example
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/laDefense.jpg');
  * }
@@ -32789,7 +32370,7 @@ _dereq_('../core/error_helpers');
  * <code>
  * function setup() {
  *   // here we use a callback to display the image after loading
- *   loadImage('assets/laDefense.jpg', img => {
+ *   loadImage('assets/laDefense.jpg', function(img) {
  *     image(img, 0, 0);
  *   });
  * }
@@ -32825,8 +32406,6 @@ p5.prototype.loadImage = function(path, successCallback, failureCallback) {
     p5._friendlyFileLoadError(0, img.src);
     if (typeof failureCallback === 'function') {
       failureCallback(e);
-    } else {
-      console.error(e);
     }
   };
 
@@ -32888,7 +32467,7 @@ function _sAssign(sVal, iVal) {
  * @example
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/laDefense.jpg');
  * }
@@ -32901,7 +32480,7 @@ function _sAssign(sVal, iVal) {
  * </div>
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/laDefense.jpg');
  * }
@@ -32917,7 +32496,7 @@ function _sAssign(sVal, iVal) {
  * <code>
  * function setup() {
  *   // Here, we use a callback to display the image after loading
- *   loadImage('assets/laDefense.jpg', img => {
+ *   loadImage('assets/laDefense.jpg', function(img) {
  *     image(img, 0, 0);
  *   });
  * }
@@ -32925,7 +32504,7 @@ function _sAssign(sVal, iVal) {
  * </div>
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/gradient.png');
  * }
@@ -33059,7 +32638,7 @@ p5.prototype.image = function(
  * @example
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/laDefense.jpg');
  * }
@@ -33073,7 +32652,7 @@ p5.prototype.image = function(
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/laDefense.jpg');
  * }
@@ -33087,7 +32666,7 @@ p5.prototype.image = function(
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/laDefense.jpg');
  * }
@@ -33141,7 +32720,7 @@ p5.prototype.tint = function() {
  * @example
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -33221,7 +32800,7 @@ p5.prototype._getTintedImageCanvas = function(img) {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -33234,7 +32813,7 @@ p5.prototype._getTintedImageCanvas = function(img) {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -33247,7 +32826,7 @@ p5.prototype._getTintedImageCanvas = function(img) {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -33277,7 +32856,7 @@ p5.prototype.imageMode = function(m) {
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/error_helpers":19,"../core/helpers":20,"../core/main":23,"./filters":41}],44:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/error_helpers":20,"../core/helpers":21,"../core/main":24,"./filters":42}],45:[function(_dereq_,module,exports){
 /**
  * @module Image
  * @submodule Image
@@ -33318,28 +32897,28 @@ var Filters = _dereq_('./filters');
  * @example
  * <div><code>
  * function setup() {
- *   let img = createImage(100, 100); // same as new p5.Image(100, 100);
+ *   var img = createImage(100, 100); // same as new p5.Image(100, 100);
  *   img.loadPixels();
  *   createCanvas(100, 100);
  *   background(0);
  *
  *   // helper for writing color to array
  *   function writeColor(image, x, y, red, green, blue, alpha) {
- *     let index = (x + y * width) * 4;
+ *     var index = (x + y * width) * 4;
  *     image.pixels[index] = red;
  *     image.pixels[index + 1] = green;
  *     image.pixels[index + 2] = blue;
  *     image.pixels[index + 3] = alpha;
  *   }
  *
- *   let x, y;
+ *   var x, y;
  *   // fill with random colors
  *   for (y = 0; y < img.height; y++) {
  *     for (x = 0; x < img.width; x++) {
- *       let red = random(255);
- *       let green = random(255);
- *       let blue = random(255);
- *       let alpha = 255;
+ *       var red = random(255);
+ *       var green = random(255);
+ *       var blue = random(255);
+ *       var alpha = 255;
  *       writeColor(img, x, y, red, green, blue, alpha);
  *     }
  *   }
@@ -33373,7 +32952,7 @@ p5.Image = function(width, height) {
    * @readOnly
    * @example
    * <div><code>
-   * let img;
+   * var img;
    * function preload() {
    *   img = loadImage('assets/rockies.jpg');
    * }
@@ -33381,8 +32960,8 @@ p5.Image = function(width, height) {
    * function setup() {
    *   createCanvas(100, 100);
    *   image(img, 0, 0);
-   *   for (let i = 0; i < img.width; i++) {
-   *     let c = img.get(i, img.height / 2);
+   *   for (var i = 0; i < img.width; i++) {
+   *     var c = img.get(i, img.height / 2);
    *     stroke(c);
    *     line(i, height / 2, i, height);
    *   }
@@ -33400,7 +32979,7 @@ p5.Image = function(width, height) {
    * @readOnly
    * @example
    * <div><code>
-   * let img;
+   * var img;
    * function preload() {
    *   img = loadImage('assets/rockies.jpg');
    * }
@@ -33408,8 +32987,8 @@ p5.Image = function(width, height) {
    * function setup() {
    *   createCanvas(100, 100);
    *   image(img, 0, 0);
-   *   for (let i = 0; i < img.height; i++) {
-   *     let c = img.get(img.width / 2, i);
+   *   for (var i = 0; i < img.height; i++) {
+   *     var c = img.get(img.width / 2, i);
    *     stroke(c);
    *     line(0, i, width / 2, i);
    *   }
@@ -33444,15 +33023,15 @@ p5.Image = function(width, height) {
    * values of the pixel at (1, 0). More generally, to set values for a pixel
    * at (x, y):
    * ```javascript
-   * let d = pixelDensity();
-   * for (let i = 0; i < d; i++) {
-   *   for (let j = 0; j < d; j++) {
+   * var d = pixelDensity();
+   * for (var i = 0; i < d; i++) {
+   *   for (var j = 0; j < d; j++) {
    *     // loop over
-   *     index = 4 * ((y * d + j) * width * d + (x * d + i));
-   *     pixels[index] = r;
-   *     pixels[index+1] = g;
-   *     pixels[index+2] = b;
-   *     pixels[index+3] = a;
+   *     idx = 4 * ((y * d + j) * width * d + (x * d + i));
+   *     pixels[idx] = r;
+   *     pixels[idx+1] = g;
+   *     pixels[idx+2] = b;
+   *     pixels[idx+3] = a;
    *   }
    * }
    * ```
@@ -33464,10 +33043,10 @@ p5.Image = function(width, height) {
    * @example
    * <div>
    * <code>
-   * let img = createImage(66, 66);
+   * var img = createImage(66, 66);
    * img.loadPixels();
-   * for (let i = 0; i < img.width; i++) {
-   *   for (let j = 0; j < img.height; j++) {
+   * for (var i = 0; i < img.width; i++) {
+   *   for (var j = 0; j < img.height; j++) {
    *     img.set(i, j, color(0, 90, 102));
    *   }
    * }
@@ -33477,10 +33056,10 @@ p5.Image = function(width, height) {
    * </div>
    * <div>
    * <code>
-   * let pink = color(255, 102, 204);
-   * let img = createImage(66, 66);
+   * var pink = color(255, 102, 204);
+   * var img = createImage(66, 66);
    * img.loadPixels();
-   * for (let i = 0; i < 4 * (width * height / 2); i += 4) {
+   * for (var i = 0; i < 4 * (width * height / 2); i += 4) {
    *   img.pixels[i] = red(pink);
    *   img.pixels[i + 1] = green(pink);
    *   img.pixels[i + 2] = blue(pink);
@@ -33514,8 +33093,8 @@ p5.Image.prototype._setProperty = function(prop, value) {
  * @method loadPixels
  * @example
  * <div><code>
- * let myImage;
- * let halfImage;
+ * var myImage;
+ * var halfImage;
  *
  * function preload() {
  *   myImage = loadImage('assets/rockies.jpg');
@@ -33524,7 +33103,7 @@ p5.Image.prototype._setProperty = function(prop, value) {
  * function setup() {
  *   myImage.loadPixels();
  *   halfImage = 4 * width * height / 2;
- *   for (let i = 0; i < halfImage; i++) {
+ *   for (var i = 0; i < halfImage; i++) {
  *     myImage.pixels[i + halfImage] = myImage.pixels[i];
  *   }
  *   myImage.updatePixels();
@@ -33559,8 +33138,8 @@ p5.Image.prototype.loadPixels = function() {
  *                              underlying canvas
  * @example
  * <div><code>
- * let myImage;
- * let halfImage;
+ * var myImage;
+ * var halfImage;
  *
  * function preload() {
  *   myImage = loadImage('assets/rockies.jpg');
@@ -33569,7 +33148,7 @@ p5.Image.prototype.loadPixels = function() {
  * function setup() {
  *   myImage.loadPixels();
  *   halfImage = 4 * width * height / 2;
- *   for (let i = 0; i < halfImage; i++) {
+ *   for (var i = 0; i < halfImage; i++) {
  *     myImage.pixels[i + halfImage] = myImage.pixels[i];
  *   }
  *   myImage.updatePixels();
@@ -33611,8 +33190,8 @@ p5.Image.prototype.updatePixels = function(x, y, w, h) {
  *                                    [R, G, B, A] or <a href="#/p5.Image">p5.Image</a>
  * @example
  * <div><code>
- * let myImage;
- * let c;
+ * var myImage;
+ * var c;
  *
  * function preload() {
  *   myImage = loadImage('assets/rockies.jpg');
@@ -33634,7 +33213,7 @@ p5.Image.prototype.updatePixels = function(x, y, w, h) {
  *
  */
 p5.Image.prototype.get = function(x, y, w, h) {
-  return p5.prototype.get.call(this, x, y, w, h);
+  return p5.Renderer2D.prototype.get.call(this, x, y, w, h);
 };
 
 /**
@@ -33653,10 +33232,10 @@ p5.Image.prototype.get = function(x, y, w, h) {
  * @example
  * <div>
  * <code>
- * let img = createImage(66, 66);
+ * var img = createImage(66, 66);
  * img.loadPixels();
- * for (let i = 0; i < img.width; i++) {
- *   for (let j = 0; j < img.height; j++) {
+ * for (var i = 0; i < img.width; i++) {
+ *   for (var j = 0; j < img.height; j++) {
  *     img.set(i, j, color(0, 90, 102, (i % img.width) * 2));
  *   }
  * }
@@ -33686,7 +33265,7 @@ p5.Image.prototype.set = function(x, y, imgOrCol) {
  * @param {Number} height the resized image height
  * @example
  * <div><code>
- * let img;
+ * var img;
  *
  * function preload() {
  *   img = loadImage('assets/rockies.jpg');
@@ -33779,10 +33358,10 @@ p5.Image.prototype.resize = function(width, height) {
  * @param  {Integer} dh destination image height
  * @example
  * <div><code>
- * let photo;
- * let bricks;
- * let x;
- * let y;
+ * var photo;
+ * var bricks;
+ * var x;
+ * var y;
  *
  * function preload() {
  *   photo = loadImage('assets/rockies.jpg');
@@ -33850,7 +33429,7 @@ p5.Image.prototype.copy = function() {
  * @param {p5.Image} srcImage source image
  * @example
  * <div><code>
- * let photo, maskImage;
+ * var photo, maskImage;
  * function preload() {
  *   photo = loadImage('assets/rockies.jpg');
  *   maskImage = loadImage('assets/mask2.png');
@@ -33916,8 +33495,8 @@ p5.Image.prototype.mask = function(p5Image) {
  *                                to each filter, see above
  * @example
  * <div><code>
- * let photo1;
- * let photo2;
+ * var photo1;
+ * var photo2;
  *
  * function preload() {
  *   photo1 = loadImage('assets/rockies.jpg');
@@ -33968,8 +33547,8 @@ p5.Image.prototype.filter = function(operation, value) {
  * http://blogs.adobe.com/webplatform/2013/01/28/blending-features-in-canvas/
  * @example
  * <div><code>
- * let mountains;
- * let bricks;
+ * var mountains;
+ * var bricks;
  *
  * function preload() {
  *   mountains = loadImage('assets/rockies.jpg');
@@ -33983,8 +33562,8 @@ p5.Image.prototype.filter = function(operation, value) {
  * }
  * </code></div>
  * <div><code>
- * let mountains;
- * let bricks;
+ * var mountains;
+ * var bricks;
  *
  * function preload() {
  *   mountains = loadImage('assets/rockies.jpg');
@@ -33998,8 +33577,8 @@ p5.Image.prototype.filter = function(operation, value) {
  * }
  * </code></div>
  * <div><code>
- * let mountains;
- * let bricks;
+ * var mountains;
+ * var bricks;
  *
  * function preload() {
  *   mountains = loadImage('assets/rockies.jpg');
@@ -34072,7 +33651,7 @@ p5.Image.prototype.isModified = function() {
  * @param  {String} extension 'png' or 'jpg'
  * @example
  * <div><code>
- * let photo;
+ * var photo;
  *
  * function preload() {
  *   photo = loadImage('assets/rockies.jpg');
@@ -34099,7 +33678,7 @@ p5.Image.prototype.save = function(filename, extension) {
 
 module.exports = p5.Image;
 
-},{"../core/main":23,"./filters":41}],45:[function(_dereq_,module,exports){
+},{"../core/main":24,"./filters":42}],46:[function(_dereq_,module,exports){
 /**
  * @module Image
  * @submodule Pixels
@@ -34131,15 +33710,15 @@ _dereq_('../color/p5.Color');
  * contain the R, G, B, A values of the pixel at (1, 0). More generally, to
  * set values for a pixel at (x, y):
  * ```javascript
- * let d = pixelDensity();
- * for (let i = 0; i < d; i++) {
- *   for (let j = 0; j < d; j++) {
+ * var d = pixelDensity();
+ * for (var i = 0; i < d; i++) {
+ *   for (var j = 0; j < d; j++) {
  *     // loop over
- *     index = 4 * ((y * d + j) * width * d + (x * d + i));
- *     pixels[index] = r;
- *     pixels[index+1] = g;
- *     pixels[index+2] = b;
- *     pixels[index+3] = a;
+ *     idx = 4 * ((y * d + j) * width * d + (x * d + i));
+ *     pixels[idx] = r;
+ *     pixels[idx+1] = g;
+ *     pixels[idx+2] = b;
+ *     pixels[idx+3] = a;
  *   }
  * }
  * ```
@@ -34162,11 +33741,11 @@ _dereq_('../color/p5.Color');
  * @example
  * <div>
  * <code>
- * let pink = color(255, 102, 204);
+ * var pink = color(255, 102, 204);
  * loadPixels();
- * let d = pixelDensity();
- * let halfImage = 4 * (width * d) * (height / 2 * d);
- * for (let i = 0; i < halfImage; i += 4) {
+ * var d = pixelDensity();
+ * var halfImage = 4 * (width * d) * (height / 2 * d);
+ * for (var i = 0; i < halfImage; i += 4) {
  *   pixels[i] = red(pink);
  *   pixels[i + 1] = green(pink);
  *   pixels[i + 2] = blue(pink);
@@ -34203,8 +33782,8 @@ p5.prototype.pixels = [];
  *
  * @example
  * <div><code>
- * let img0;
- * let img1;
+ * var img0;
+ * var img1;
  *
  * function preload() {
  *   img0 = loadImage('assets/rockies.jpg');
@@ -34218,8 +33797,8 @@ p5.prototype.pixels = [];
  * }
  * </code></div>
  * <div><code>
- * let img0;
- * let img1;
+ * var img0;
+ * var img1;
  *
  * function preload() {
  *   img0 = loadImage('assets/rockies.jpg');
@@ -34233,8 +33812,8 @@ p5.prototype.pixels = [];
  * }
  * </code></div>
  * <div><code>
- * let img0;
- * let img1;
+ * var img0;
+ * var img1;
  *
  * function preload() {
  *   img0 = loadImage('assets/rockies.jpg');
@@ -34297,7 +33876,7 @@ p5.prototype.blend = function() {
  *
  * @example
  * <div><code>
- * let img;
+ * var img;
  *
  * function preload() {
  *   img = loadImage('assets/rockies.jpg');
@@ -34391,7 +33970,7 @@ p5.prototype.copy = function() {
  * @example
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -34404,7 +33983,7 @@ p5.prototype.copy = function() {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -34417,7 +33996,7 @@ p5.prototype.copy = function() {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -34430,7 +34009,7 @@ p5.prototype.copy = function() {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -34443,7 +34022,7 @@ p5.prototype.copy = function() {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -34456,7 +34035,7 @@ p5.prototype.copy = function() {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -34469,7 +34048,7 @@ p5.prototype.copy = function() {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -34482,7 +34061,7 @@ p5.prototype.copy = function() {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/bricks.jpg');
  * }
@@ -34529,17 +34108,17 @@ p5.prototype.filter = function(operation, value) {
  * Getting the color of a single pixel with get(x, y) is easy, but not as fast
  * as grabbing the data directly from <a href="#/p5/pixels">pixels[]</a>. The equivalent statement to
  * get(x, y) using <a href="#/p5/pixels">pixels[]</a> with pixel density d is
- * ```javascript
- * let x, y, d; // set these to the coordinates
- * let off = (y * width + x) * d * 4;
- * let components = [
+ * <code>
+ * var x, y, d; // set these to the coordinates
+ * var off = (y * width + x) * d * 4;
+ * var components = [
  *   pixels[off],
  *   pixels[off + 1],
  *   pixels[off + 2],
  *   pixels[off + 3]
  * ];
  * print(components);
- * ```
+ * </code>
  * <br><br>
  * See the reference for <a href="#/p5/pixels">pixels[]</a> for more information.
  *
@@ -34556,13 +34135,13 @@ p5.prototype.filter = function(operation, value) {
  * @example
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/rockies.jpg');
  * }
  * function setup() {
  *   image(img, 0, 0);
- *   let c = get();
+ *   var c = get();
  *   image(c, width / 2, 0);
  * }
  * </code>
@@ -34570,13 +34149,13 @@ p5.prototype.filter = function(operation, value) {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/rockies.jpg');
  * }
  * function setup() {
  *   image(img, 0, 0);
- *   let c = get(50, 90);
+ *   var c = get(50, 90);
  *   fill(c);
  *   noStroke();
  *   rect(25, 25, 50, 50);
@@ -34590,33 +34169,7 @@ p5.prototype.filter = function(operation, value) {
  *
  */
 p5.prototype.get = function(x, y, w, h) {
-  if (typeof w === 'undefined' && typeof h === 'undefined') {
-    if (typeof x === 'undefined' && typeof y === 'undefined') {
-      x = y = 0;
-      w = this.width;
-      h = this.height;
-    } else {
-      w = h = 1;
-    }
-  }
-
-  // if the section does not overlap the canvas
-  if (x + w < 0 || y + h < 0 || x >= this.width || y >= this.height) {
-    // TODO: is this valid for w,h > 1 ?
-    return [0, 0, 0, 255];
-  }
-
-  // round down to get integer numbers
-  x = Math.floor(x);
-  y = Math.floor(y);
-  w = Math.floor(w);
-  h = Math.floor(h);
-
-  if (this instanceof p5.Image) {
-    return p5.Renderer2D.prototype.get.call(this, x, y, w, h);
-  } else {
-    return this._renderer.get(x, y, w, h);
-  }
+  return this._renderer.get(x, y, w, h);
 };
 
 /**
@@ -34629,17 +34182,17 @@ p5.prototype.get = function(x, y, w, h) {
  * @example
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/rockies.jpg');
  * }
  *
  * function setup() {
  *   image(img, 0, 0);
- *   let d = pixelDensity();
- *   let halfImage = 4 * (img.width * d) * (img.height * d / 2);
+ *   var d = pixelDensity();
+ *   var halfImage = 4 * (img.width * d) * (img.height * d / 2);
  *   loadPixels();
- *   for (let i = 0; i < halfImage; i++) {
+ *   for (var i = 0; i < halfImage; i++) {
  *     pixels[i + halfImage] = pixels[i];
  *   }
  *   updatePixels();
@@ -34685,7 +34238,7 @@ p5.prototype.loadPixels = function() {
  * @example
  * <div>
  * <code>
- * let black = color(0);
+ * var black = color(0);
  * set(30, 20, black);
  * set(85, 20, black);
  * set(85, 75, black);
@@ -34696,9 +34249,9 @@ p5.prototype.loadPixels = function() {
  *
  * <div>
  * <code>
- * for (let i = 30; i < width - 15; i++) {
- *   for (let j = 20; j < height - 25; j++) {
- *     let c = color(204 - j, 153 - i, 0);
+ * for (var i = 30; i < width - 15; i++) {
+ *   for (var j = 20; j < height - 25; j++) {
+ *     var c = color(204 - j, 153 - i, 0);
  *     set(i, j, c);
  *   }
  * }
@@ -34708,7 +34261,7 @@ p5.prototype.loadPixels = function() {
  *
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/rockies.jpg');
  * }
@@ -34748,17 +34301,17 @@ p5.prototype.set = function(x, y, imgOrCol) {
  * @example
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/rockies.jpg');
  * }
  *
  * function setup() {
  *   image(img, 0, 0);
- *   let d = pixelDensity();
- *   let halfImage = 4 * (img.width * d) * (img.height * d / 2);
+ *   var d = pixelDensity();
+ *   var halfImage = 4 * (img.width * d) * (img.height * d / 2);
  *   loadPixels();
- *   for (let i = 0; i < halfImage; i++) {
+ *   for (var i = 0; i < halfImage; i++) {
  *     pixels[i + halfImage] = pixels[i];
  *   }
  *   updatePixels();
@@ -34780,7 +34333,7 @@ p5.prototype.updatePixels = function(x, y, w, h) {
 
 module.exports = p5;
 
-},{"../color/p5.Color":15,"../core/main":23,"./filters":41}],46:[function(_dereq_,module,exports){
+},{"../color/p5.Color":16,"../core/main":24,"./filters":42}],47:[function(_dereq_,module,exports){
 /**
  * @module IO
  * @submodule Input
@@ -34830,10 +34383,10 @@ _dereq_('../core/error_helpers');
  * <div><code>
  * // Examples use USGS Earthquake API:
  * //   https://earthquake.usgs.gov/fdsnws/event/1/#methods
- * let earthquakes;
+ * var earthquakes;
  * function preload() {
  *   // Get the most recent earthquake in the database
- *   let url =
+ *   var url =
     'https://earthquake.usgs.gov/earthquakes/feed/v1.0/' +
  *     'summary/all_day.geojson';
  *   earthquakes = loadJSON(url);
@@ -34846,8 +34399,8 @@ _dereq_('../core/error_helpers');
  * function draw() {
  *   background(200);
  *   // Get the magnitude and name of the earthquake out of the loaded JSON
- *   let earthquakeMag = earthquakes.features[0].properties.mag;
- *   let earthquakeName = earthquakes.features[0].properties.place;
+ *   var earthquakeMag = earthquakes.features[0].properties.mag;
+ *   var earthquakeName = earthquakes.features[0].properties.place;
  *   ellipse(width / 2, height / 2, earthquakeMag * 10, earthquakeMag * 10);
  *   textAlign(CENTER);
  *   text(earthquakeName, 0, height - 30, width, 30);
@@ -34860,7 +34413,7 @@ _dereq_('../core/error_helpers');
  * <div><code>
  * function setup() {
  *   noLoop();
- *   let url =
+ *   var url =
     'https://earthquake.usgs.gov/earthquakes/feed/v1.0/' +
  *     'summary/all_day.geojson';
  *   loadJSON(url, drawEarthquake);
@@ -34872,8 +34425,8 @@ _dereq_('../core/error_helpers');
  *
  * function drawEarthquake(earthquakes) {
  *   // Get the magnitude and name of the earthquake out of the loaded JSON
- *   let earthquakeMag = earthquakes.features[0].properties.mag;
- *   let earthquakeName = earthquakes.features[0].properties.place;
+ *   var earthquakeMag = earthquakes.features[0].properties.mag;
+ *   var earthquakeName = earthquakes.features[0].properties.place;
  *   ellipse(width / 2, height / 2, earthquakeMag * 10, earthquakeMag * 10);
  *   textAlign(CENTER);
  *   text(earthquakeName, 0, height - 30, width, 30);
@@ -34989,14 +34542,14 @@ p5.prototype.loadJSON = function() {
  * operation before <a href="#/p5/setup">setup()</a> and <a href="#/p5/draw">draw()</a> are called.</p>
  *
  * <div><code>
- * let result;
+ * var result;
  * function preload() {
  *   result = loadStrings('assets/test.txt');
  * }
 
  * function setup() {
  *   background(200);
- *   let ind = floor(random(result.length));
+ *   var ind = floor(random(result.length));
  *   text(result[ind], 10, 10, 80, 80);
  * }
  * </code></div>
@@ -35011,7 +34564,7 @@ p5.prototype.loadJSON = function() {
  *
  * function pickString(result) {
  *   background(200);
- *   let ind = floor(random(result.length));
+ *   var ind = floor(random(result.length));
  *   text(result[ind], 10, 10, 80, 80);
  * }
  * </code></div>
@@ -35130,7 +34683,7 @@ p5.prototype.loadStrings = function() {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -35150,8 +34703,8 @@ p5.prototype.loadStrings = function() {
  *   //["Goat", "Leopard", "Zebra"]
  *
  *   //cycle through the table
- *   for (let r = 0; r < table.getRowCount(); r++)
- *     for (let c = 0; c < table.getColumnCount(); c++) {
+ *   for (var r = 0; r < table.getRowCount(); r++)
+ *     for (var c = 0; c < table.getColumnCount(); c++) {
  *       print(table.getString(r, c));
  *     }
  * }
@@ -35358,7 +34911,7 @@ p5.prototype.loadTable = function(path) {
       if (errorCallback) {
         errorCallback(err);
       } else {
-        console.error(err);
+        throw err;
       }
     }
   );
@@ -35381,6 +34934,29 @@ function makeObject(row, headers) {
     ret[key] = val;
   }
   return ret;
+}
+
+function parseXML(two) {
+  var one = new p5.XML();
+  var children = two.childNodes;
+  if (children && children.length) {
+    for (var i = 0; i < children.length; i++) {
+      var node = parseXML(children[i]);
+      one.addChild(node);
+    }
+    one.setName(two.nodeName);
+    one._setCont(two.textContent);
+    one._setAttributes(two);
+    for (var j = 0; j < one.children.length; j++) {
+      one.children[j].parent = one;
+    }
+    return one;
+  } else {
+    one.setName(two.nodeName);
+    one._setCont(two.textContent);
+    one._setAttributes(two);
+    return one;
+  }
 }
 
 /**
@@ -35422,19 +34998,19 @@ function makeObject(row, headers) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let children = xml.getChildren('animal');
+ *   var children = xml.getChildren('animal');
  *
- *   for (let i = 0; i < children.length; i++) {
- *     let id = children[i].getNum('id');
- *     let coloring = children[i].getString('species');
- *     let name = children[i].getContent();
+ *   for (var i = 0; i < children.length; i++) {
+ *     var id = children[i].getNum('id');
+ *     var coloring = children[i].getString('species');
+ *     var name = children[i].getContent();
  *     print(id + ', ' + coloring + ', ' + name);
  *   }
  * }
@@ -35450,7 +35026,7 @@ function makeObject(row, headers) {
  *
  */
 p5.prototype.loadXML = function() {
-  var ret = new p5.XML();
+  var ret = {};
   var callback, errorCallback;
 
   for (var i = 1; i < arguments.length; i++) {
@@ -35506,14 +35082,14 @@ p5.prototype.loadXML = function() {
  *
  * @example
  * <div class='norender'><code>
- * let data;
+ * var data;
  *
  * function preload() {
  *   data = loadBytes('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   for (let i = 0; i < 5; i++) {
+ *   for (var i = 0; i < 5; i++) {
  *     console.log(data.bytes[i].toString(16));
  *   }
  * }
@@ -35579,10 +35155,10 @@ p5.prototype.loadBytes = function(file, callback, errorCallback) {
  * <div class='norender'><code>
  * // Examples use USGS Earthquake API:
  * //   https://earthquake.usgs.gov/fdsnws/event/1/#methods
- * let earthquakes;
+ * var earthquakes;
  * function preload() {
  *   // Get the most recent earthquake in the database
- *   let url =
+ *   var url =
     'https://earthquake.usgs.gov/fdsnws/event/1/query?' +
  *     'format=geojson&limit=1&orderby=time';
  *   httpGet(url, 'jsonp', false, function(response) {
@@ -35599,8 +35175,8 @@ p5.prototype.loadBytes = function(file, callback, errorCallback) {
  *   }
  *   background(200);
  *   // Get the magnitude and name of the earthquake out of the loaded JSON
- *   let earthquakeMag = earthquakes.features[0].properties.mag;
- *   let earthquakeName = earthquakes.features[0].properties.place;
+ *   var earthquakeMag = earthquakes.features[0].properties.mag;
+ *   var earthquakeName = earthquakes.features[0].properties.place;
  *   ellipse(width / 2, height / 2, earthquakeMag * 10, earthquakeMag * 10);
  *   textAlign(CENTER);
  *   text(earthquakeName, 0, height - 30, width, 30);
@@ -35656,8 +35232,8 @@ p5.prototype.httpGet = function() {
  * <code>
  * // Examples use jsonplaceholder.typicode.com for a Mock Data API
  *
- * let url = 'https://jsonplaceholder.typicode.com/posts';
- * let postData = { userId: 1, title: 'p5 Clicked!', body: 'p5.js is way cool.' };
+ * var url = 'https://jsonplaceholder.typicode.com/posts';
+ * var postData = { userId: 1, title: 'p5 Clicked!', body: 'p5.js is way cool.' };
  *
  * function setup() {
  *   createCanvas(800, 800);
@@ -35665,9 +35241,9 @@ p5.prototype.httpGet = function() {
  *
  * function mousePressed() {
  *   // Pick new random color values
- *   let r = random(255);
- *   let g = random(255);
- *   let b = random(255);
+ *   var r = random(255);
+ *   var g = random(255);
+ *   var b = random(255);
  *
  *   httpPost(url, 'json', postData, function(result) {
  *     strokeWeight(2);
@@ -35682,8 +35258,8 @@ p5.prototype.httpGet = function() {
  *
  *
  * <div><code>
- * let url = 'https://invalidURL'; // A bad URL that will cause errors
- * let postData = { title: 'p5 Clicked!', body: 'p5.js is way cool.' };
+ * var url = 'https://invalidURL'; // A bad URL that will cause errors
+ * var postData = { title: 'p5 Clicked!', body: 'p5.js is way cool.' };
  *
  * function setup() {
  *   createCanvas(800, 800);
@@ -35691,9 +35267,9 @@ p5.prototype.httpGet = function() {
  *
  * function mousePressed() {
  *   // Pick new random color values
- *   let r = random(255);
- *   let g = random(255);
- *   let b = random(255);
+ *   var r = random(255);
+ *   var g = random(255);
+ *   var b = random(255);
  *
  *   httpPost(
  *     url,
@@ -35767,11 +35343,11 @@ p5.prototype.httpPost = function() {
  * // https://earthquake.usgs.gov/fdsnws/event/1/#methods
  *
  * // displays an animation of all USGS earthquakes
- * let earthquakes;
- * let eqFeatureIndex = 0;
+ * var earthquakes;
+ * var eqFeatureIndex = 0;
  *
  * function preload() {
- *   let url = 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson';
+ *   var url = 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson';
  *   httpDo(
  *     url,
  *     {
@@ -35792,9 +35368,9 @@ p5.prototype.httpPost = function() {
  *   }
  *   clear();
  *
- *   let feature = earthquakes.features[eqFeatureIndex];
- *   let mag = feature.properties.mag;
- *   let rad = mag / 11 * ((width + height) / 2);
+ *   var feature = earthquakes.features[eqFeatureIndex];
+ *   var mag = feature.properties.mag;
+ *   var rad = mag / 11 * ((width + height) / 2);
  *   fill(255, 0, 0, 100);
  *   ellipse(width / 2 + random(-2, 2), height / 2 + random(-2, 2), rad, rad);
  *
@@ -35876,9 +35452,6 @@ p5.prototype.httpDo = function() {
           for (var attr in a) {
             jsonpOptions[attr] = a[attr];
           }
-        } else if (a instanceof p5.XML) {
-          data = a.serialize();
-          contentType = 'application/xml';
         } else {
           data = JSON.stringify(a);
           contentType = 'application/json';
@@ -35940,7 +35513,7 @@ p5.prototype.httpDo = function() {
           return res.text().then(function(text) {
             var parser = new DOMParser();
             var xml = parser.parseFromString(text, 'text/xml');
-            return new p5.XML(xml.documentElement);
+            return parseXML(xml.documentElement);
           });
         default:
           return res.text();
@@ -35971,22 +35544,16 @@ p5.prototype._pWriters = [];
  * @example
  * <div>
  * <code>
- * function setup() {
- *   createCanvas(100, 100);
- *   background(200);
- *   text('click here to save', 10, 10, 70, 80);
- * }
- *
- * function mousePressed() {
- *   if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+ * createButton('save')
+ *   .position(10, 10)
+ *   .mousePressed(function() {
  *     var writer = createWriter('squares.txt');
- *     for (let i = 0; i < 10; i++) {
+ *     for (var i = 0; i < 10; i++) {
  *       writer.print(i * i);
  *     }
  *     writer.close();
  *     writer.clear();
- *   }
- * }
+ *   });
  * </code>
  * </div>
  */
@@ -36026,7 +35593,7 @@ p5.PrintWriter = function(filename, extension) {
    * <div class="norender notest">
    * <code>
    * // creates a file called 'newFile.txt'
-   * let writer = createWriter('newFile.txt');
+   * var writer = createWriter('newFile.txt');
    * // write 'Hello world!'' to the file
    * writer.write(['Hello world!']);
    * // close the PrintWriter and save the file
@@ -36036,7 +35603,7 @@ p5.PrintWriter = function(filename, extension) {
    * <div class='norender notest'>
    * <code>
    * // creates a file called 'newFile2.txt'
-   * let writer = createWriter('newFile2.txt');
+   * var writer = createWriter('newFile2.txt');
    * // write 'apples,bananas,123' to the file
    * writer.write(['apples', 'bananas', 123]);
    * // close the PrintWriter and save the file
@@ -36046,7 +35613,7 @@ p5.PrintWriter = function(filename, extension) {
    * <div class='norender notest'>
    * <code>
    * // creates a file called 'newFile3.txt'
-   * let writer = createWriter('newFile3.txt');
+   * var writer = createWriter('newFile3.txt');
    * // write 'My name is: Teddy' to the file
    * writer.write('My name is:');
    * writer.write(' Teddy');
@@ -36066,7 +35633,7 @@ p5.PrintWriter = function(filename, extension) {
    * <div class='norender notest'>
    * <code>
    * // creates a file called 'newFile.txt'
-   * let writer = createWriter('newFile.txt');
+   * var writer = createWriter('newFile.txt');
    * // creates a file containing
    * //  My name is:
    * //  Teddy
@@ -36078,7 +35645,7 @@ p5.PrintWriter = function(filename, extension) {
    * </div>
    * <div class='norender notest'>
    * <code>
-   * let writer;
+   * var writer;
    *
    * function setup() {
    *   createCanvas(400, 400);
@@ -36107,7 +35674,7 @@ p5.PrintWriter = function(filename, extension) {
    * @example
    * <div class ="norender notest"><code>
    * // create writer object
-   * let writer = createWriter('newFile.txt');
+   * var writer = createWriter('newFile.txt');
    * writer.write(['clear me']);
    * // clear writer object here
    * writer.clear();
@@ -36126,7 +35693,7 @@ p5.PrintWriter = function(filename, extension) {
    * <div class="norender notest">
    * <code>
    * // create a file called 'newFile.txt'
-   * let writer = createWriter('newFile.txt');
+   * var writer = createWriter('newFile.txt');
    * // close the PrintWriter and save the file
    * writer.close();
    * </code>
@@ -36134,7 +35701,7 @@ p5.PrintWriter = function(filename, extension) {
    * <div class='norender notest'>
    * <code>
    * // create a file called 'newFile2.txt'
-   * let writer = createWriter('newFile2.txt');
+   * var writer = createWriter('newFile2.txt');
    * // write some data to the file
    * writer.write([100, 101, 102]);
    * // close the PrintWriter and save the file
@@ -36187,25 +35754,25 @@ p5.PrintWriter = function(filename, extension) {
  *  p5.SoundFile (requires p5.sound). The second parameter is a filename
  *  (including extension). The third parameter is for options specific
  *  to this type of object. This method will save a file that fits the
- *  given parameters. For example:</p>
+ *  given paramaters. For example:</p>
  *
  * <pre class='language-javascript'><code>
  * // Saves canvas as an image
  * save('myCanvas.jpg');
  *
  * // Saves pImage as a png image
- * let img = createImage(10, 10);
+ * var img = createImage(10, 10);
  * save(img, 'my.png');
  *
  * // Saves canvas as an image
- * let cnv = createCanvas(100, 100);
+ * var cnv = createCanvas(100, 100);
  * save(cnv, 'myCanvas.jpg');
  *
  * // Saves p5.Renderer object as an image
- * let gb = createGraphics(100, 100);
+ * var gb = createGraphics(100, 100);
  * save(gb, 'myGraphics.jpg');
  *
- * let myTable = new p5.Table();
+ * var myTable = new p5.Table();
  *
  * // Saves table as html file
  * save(myTable, 'myTable.html');
@@ -36216,7 +35783,7 @@ p5.PrintWriter = function(filename, extension) {
  * // Tab Separated Values
  * save(myTable, 'myTable.tsv');
  *
- * let myJSON = { a: 1, b: true };
+ * var myJSON = { a: 1, b: true };
  *
  * // Saves pretty JSON
  * save(myJSON, 'my.json');
@@ -36225,7 +35792,7 @@ p5.PrintWriter = function(filename, extension) {
  * save(myJSON, 'my.json', true);
  *
  * // Saves array of strings to a text file with line breaks after each item
- * let arrayOfStrings = ['a', 'b'];
+ * var arrayOfStrings = ['a', 'b'];
  * save(arrayOfStrings, 'my.txt');
  * </code></pre>
  *
@@ -36256,7 +35823,7 @@ p5.prototype.save = function(object, _filename, _options) {
   // OPTION 1: saveCanvas...
 
   // if no arguments are provided, save canvas
-  var cnv = this._curElement ? this._curElement.elt : this.elt;
+  var cnv = this._curElement.elt;
   if (args.length === 0) {
     p5.prototype.saveCanvas(cnv);
     return;
@@ -36310,23 +35877,17 @@ p5.prototype.save = function(object, _filename, _options) {
  *                                 (but not readability).
  *  @example
  * <div><code>
- * let json = {}; // new  JSON Object
+ * var json = {}; // new  JSON Object
  *
  * json.id = 0;
  * json.species = 'Panthera leo';
  * json.name = 'Lion';
  *
- * function setup() {
- *   createCanvas(100, 100);
- *   background(200);
- *   text('click here to save', 10, 10, 70, 80);
- * }
- *
- * function mousePressed() {
- *   if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+ * createButton('save')
+ *   .position(10, 10)
+ *   .mousePressed(function() {
  *     saveJSON(json, 'lion.json');
- *   }
- * }
+ *   });
  *
  * // saves the following to a file called "lion.json":
  * // {
@@ -36365,22 +35926,16 @@ p5.prototype.saveJSONArray = p5.prototype.saveJSON;
  *  @param  {String} [extension] the filename's extension
  *  @example
  * <div><code>
- * let words = 'apple bear cat dog';
+ * var words = 'apple bear cat dog';
  *
  * // .split() outputs an Array
- * let list = split(words, ' ');
+ * var list = split(words, ' ');
  *
- * function setup() {
- *   createCanvas(100, 100);
- *   background(200);
- *   text('click here to save', 10, 10, 70, 80);
- * }
- *
- * function mousePressed() {
- *   if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+ * createButton('save')
+ *   .position(10, 10)
+ *   .mousePressed(function() {
  *     saveStrings(list, 'nouns.txt');
- *   }
- * }
+ *   });
  *
  * // Saves the following to a file called 'nouns.txt':
  * //
@@ -36435,7 +35990,7 @@ function escapeHelper(content) {
  *  @param  {String} [options]  can be one of "tsv", "csv", or "html"
  *  @example
  *  <div><code>
- * let table;
+ * var table;
  *
  * function setup() {
  *   table = new p5.Table();
@@ -36444,7 +35999,7 @@ function escapeHelper(content) {
  *   table.addColumn('species');
  *   table.addColumn('name');
  *
- *   let newRow = table.addRow();
+ *   var newRow = table.addRow();
  *   newRow.setNum('id', table.getRowCount() - 1);
  *   newRow.setString('species', 'Panthera leo');
  *   newRow.setString('name', 'Lion');
@@ -36675,7 +36230,7 @@ function destroyClickedElement(event) {
 
 module.exports = p5;
 
-},{"../core/error_helpers":19,"../core/main":23,"es6-promise":4,"fetch-jsonp":5,"file-saver":6,"whatwg-fetch":11}],47:[function(_dereq_,module,exports){
+},{"../core/error_helpers":20,"../core/main":24,"es6-promise":4,"fetch-jsonp":5,"file-saver":6,"whatwg-fetch":12}],48:[function(_dereq_,module,exports){
 /**
  * @module IO
  * @submodule Table
@@ -36755,7 +36310,7 @@ p5.Table = function(rows) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -36765,14 +36320,14 @@ p5.Table = function(rows) {
  *
  * function setup() {
  *   //add a row
- *   let newRow = table.addRow();
+ *   var newRow = table.addRow();
  *   newRow.setString('id', table.getRowCount() - 1);
  *   newRow.setString('species', 'Canis Lupus');
  *   newRow.setString('name', 'Wolf');
  *
  *   //print the results
- *   for (let r = 0; r < table.getRowCount(); r++)
- *     for (let c = 0; c < table.getColumnCount(); c++)
+ *   for (var r = 0; r < table.getRowCount(); r++)
+ *     for (var c = 0; c < table.getColumnCount(); c++)
  *       print(table.getString(r, c));
  * }
  * </code>
@@ -36812,7 +36367,7 @@ p5.Table.prototype.addRow = function(row) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -36825,8 +36380,8 @@ p5.Table.prototype.addRow = function(row) {
  *   table.removeRow(0);
  *
  *   //print the results
- *   for (let r = 0; r < table.getRowCount(); r++)
- *     for (let c = 0; c < table.getColumnCount(); c++)
+ *   for (var r = 0; r < table.getRowCount(); r++)
+ *     for (var c = 0; c < table.getColumnCount(); c++)
  *       print(table.getString(r, c));
  * }
  * </code>
@@ -36862,7 +36417,7 @@ p5.Table.prototype.removeRow = function(id) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -36871,10 +36426,10 @@ p5.Table.prototype.removeRow = function(id) {
  * }
  *
  * function setup() {
- *   let row = table.getRow(1);
+ *   var row = table.getRow(1);
  *   //print it column by column
  *   //note: a row is an object, not an array
- *   for (let c = 0; c < table.getColumnCount(); c++) {
+ *   for (var c = 0; c < table.getColumnCount(); c++) {
  *     print(row.getString(c));
  *   }
  * }
@@ -36906,7 +36461,7 @@ p5.Table.prototype.getRow = function(r) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -36915,16 +36470,16 @@ p5.Table.prototype.getRow = function(r) {
  * }
  *
  * function setup() {
- *   let rows = table.getRows();
+ *   var rows = table.getRows();
  *
  *   //warning: rows is an array of objects
- *   for (let r = 0; r < rows.length; r++) {
+ *   for (var r = 0; r < rows.length; r++) {
  *     rows[r].set('name', 'Unicorn');
  *   }
  *
  *   //print the results
- *   for (let r = 0; r < table.getRowCount(); r++)
- *     for (let c = 0; c < table.getColumnCount(); c++)
+ *   for (r = 0; r < table.getRowCount(); r++)
+ *     for (var c = 0; c < table.getColumnCount(); c++)
  *       print(table.getString(r, c));
  * }
  * </code>
@@ -36962,7 +36517,7 @@ p5.Table.prototype.getRows = function() {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -36972,7 +36527,7 @@ p5.Table.prototype.getRows = function() {
  *
  * function setup() {
  *   //find the animal named zebra
- *   let row = table.findRow('Zebra', 'name');
+ *   var row = table.findRow('Zebra', 'name');
  *   //find the corresponding species
  *   print(row.getString('species'));
  * }
@@ -37027,7 +36582,7 @@ p5.Table.prototype.findRow = function(value, column) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37037,13 +36592,13 @@ p5.Table.prototype.findRow = function(value, column) {
  *
  * function setup() {
  *   //add another goat
- *   let newRow = table.addRow();
+ *   var newRow = table.addRow();
  *   newRow.setString('id', table.getRowCount() - 1);
  *   newRow.setString('species', 'Scape Goat');
  *   newRow.setString('name', 'Goat');
  *
  *   //find the rows containing animals named Goat
- *   let rows = table.findRows('Goat', 'name');
+ *   var rows = table.findRows('Goat', 'name');
  *   print(rows.length + ' Goats found');
  * }
  * </code>
@@ -37096,7 +36651,7 @@ p5.Table.prototype.findRows = function(value, column) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37106,7 +36661,7 @@ p5.Table.prototype.findRows = function(value, column) {
  *
  * function setup() {
  *   //Search using specified regex on a given column, return TableRow object
- *   let mammal = table.matchRow(new RegExp('ant'), 1);
+ *   var mammal = table.matchRow(new RegExp('ant'), 1);
  *   print(mammal.getString(1));
  *   //Output "Panthera pardus"
  * }
@@ -37145,7 +36700,7 @@ p5.Table.prototype.matchRow = function(regexp, column) {
  * @example
  * <div class="norender">
  * <code>
- * let table;
+ * var table;
  *
  * function setup() {
  *   table = new p5.Table();
@@ -37153,7 +36708,7 @@ p5.Table.prototype.matchRow = function(regexp, column) {
  *   table.addColumn('name');
  *   table.addColumn('type');
  *
- *   let newRow = table.addRow();
+ *   var newRow = table.addRow();
  *   newRow.setString('name', 'Lion');
  *   newRow.setString('type', 'Mammal');
  *
@@ -37169,8 +36724,8 @@ p5.Table.prototype.matchRow = function(regexp, column) {
  *   newRow.setString('name', 'Lizard');
  *   newRow.setString('type', 'Reptile');
  *
- *   let rows = table.matchRows('R.*', 'type');
- *   for (let i = 0; i < rows.length; i++) {
+ *   var rows = table.matchRows('R.*', 'type');
+ *   for (var i = 0; i < rows.length; i++) {
  *     print(rows[i].getString('name') + ': ' + rows[i].getString('type'));
  *   }
  * }
@@ -37217,7 +36772,7 @@ p5.Table.prototype.matchRows = function(regexp, column) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37268,7 +36823,7 @@ p5.Table.prototype.getColumn = function(value) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37313,7 +36868,7 @@ p5.Table.prototype.clearRows = function() {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37328,8 +36883,8 @@ p5.Table.prototype.clearRows = function() {
  *   table.set(2, 'carnivore', 'no');
  *
  *   //print the results
- *   for (let r = 0; r < table.getRowCount(); r++)
- *     for (let c = 0; c < table.getColumnCount(); c++)
+ *   for (var r = 0; r < table.getRowCount(); r++)
+ *     for (var c = 0; c < table.getColumnCount(); c++)
  *       print(table.getString(r, c));
  * }
  * </code>
@@ -37357,7 +36912,7 @@ p5.Table.prototype.addColumn = function(title) {
  * // Blob1, Blobby, Sweet, Blob, Pink
  * // Blob2, Saddy, Savory, Blob, Blue
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   table = loadTable('assets/blobs.csv');
@@ -37370,7 +36925,7 @@ p5.Table.prototype.addColumn = function(title) {
  * }
  *
  * function draw() {
- *   let numOfColumn = table.getColumnCount();
+ *   var numOfColumn = table.getColumnCount();
  *   text('There are ' + numOfColumn + ' columns in the table.', 100, 50);
  * }
  * </code>
@@ -37394,7 +36949,7 @@ p5.Table.prototype.getColumnCount = function() {
  * // Blob1, Blobby, Sweet, Blob, Pink
  * // Blob2, Saddy, Savory, Blob, Blue
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   table = loadTable('assets/blobs.csv');
@@ -37431,12 +36986,12 @@ p5.Table.prototype.getRowCount = function() {
  * @example
  * <div class="norender"><code>
  * function setup() {
- *   let table = new p5.Table();
+ *   var table = new p5.Table();
  *
  *   table.addColumn('name');
  *   table.addColumn('type');
  *
- *   let newRow = table.addRow();
+ *   var newRow = table.addRow();
  *   newRow.setString('name', '   $Lion  ,');
  *   newRow.setString('type', ',,,Mammal');
  *
@@ -37502,12 +37057,12 @@ p5.Table.prototype.removeTokens = function(chars, column) {
  * @example
  * <div class="norender"><code>
  * function setup() {
- *   let table = new p5.Table();
+ *   var table = new p5.Table();
  *
  *   table.addColumn('name');
  *   table.addColumn('type');
  *
- *   let newRow = table.addRow();
+ *   var newRow = table.addRow();
  *   newRow.setString('name', '   Lion  ,');
  *   newRow.setString('type', ' Mammal  ');
  *
@@ -37575,7 +37130,7 @@ p5.Table.prototype.trim = function(column) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37641,7 +37196,7 @@ p5.Table.prototype.removeColumn = function(c) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37654,8 +37209,8 @@ p5.Table.prototype.removeColumn = function(c) {
  *   table.set(0, 'name', 'Wolf');
  *
  *   //print the results
- *   for (let r = 0; r < table.getRowCount(); r++)
- *     for (let c = 0; c < table.getColumnCount(); c++)
+ *   for (var r = 0; r < table.getRowCount(); r++)
+ *     for (var c = 0; c < table.getColumnCount(); c++)
  *       print(table.getString(r, c));
  * }
  * </code>
@@ -37691,7 +37246,7 @@ p5.Table.prototype.set = function(row, column, value) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37734,7 +37289,7 @@ p5.Table.prototype.setNum = function(row, column, value) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37744,7 +37299,7 @@ p5.Table.prototype.setNum = function(row, column, value) {
  *
  * function setup() {
  *   //add a row
- *   let newRow = table.addRow();
+ *   var newRow = table.addRow();
  *   newRow.setString('id', table.getRowCount() - 1);
  *   newRow.setString('species', 'Canis Lupus');
  *   newRow.setString('name', 'Wolf');
@@ -37782,7 +37337,7 @@ p5.Table.prototype.setString = function(row, column, value) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37829,7 +37384,7 @@ p5.Table.prototype.get = function(row, column) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37874,7 +37429,7 @@ p5.Table.prototype.getNum = function(row, column) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   // table is comma separated value "CSV"
@@ -37926,7 +37481,7 @@ p5.Table.prototype.getString = function(row, column) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -37935,7 +37490,7 @@ p5.Table.prototype.getString = function(row, column) {
  * }
  *
  * function setup() {
- *   let tableObject = table.getObject();
+ *   var tableObject = table.getObject();
  *
  *   print(tableObject);
  *   //outputs an object
@@ -37988,7 +37543,7 @@ p5.Table.prototype.getObject = function(headerColumn) {
  * // 1,Panthera pardus,Leoperd
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   // table is comma separated value "CSV"
@@ -37997,8 +37552,8 @@ p5.Table.prototype.getObject = function(headerColumn) {
  * }
  *
  * function setup() {
- *   let tableArray = table.getArray();
- *   for (let i = 0; i < tableArray.length; i++) {
+ *   var tableArray = table.getArray();
+ *   for (var i = 0; i < tableArray.length; i++) {
  *     print(tableArray[i]);
  *   }
  * }
@@ -38019,7 +37574,7 @@ p5.Table.prototype.getArray = function() {
 
 module.exports = p5;
 
-},{"../core/main":23}],48:[function(_dereq_,module,exports){
+},{"../core/main":24}],49:[function(_dereq_,module,exports){
 /**
  * @module IO
  * @submodule Table
@@ -38079,7 +37634,7 @@ p5.TableRow = function(str, separator) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -38088,8 +37643,8 @@ p5.TableRow = function(str, separator) {
  * }
  *
  * function setup() {
- *   let rows = table.getRows();
- *   for (let r = 0; r < rows.length; r++) {
+ *   var rows = table.getRows();
+ *   for (var r = 0; r < rows.length; r++) {
  *     rows[r].set('name', 'Unicorn');
  *   }
  *
@@ -38143,7 +37698,7 @@ p5.TableRow.prototype.set = function(column, value) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -38152,8 +37707,8 @@ p5.TableRow.prototype.set = function(column, value) {
  * }
  *
  * function setup() {
- *   let rows = table.getRows();
- *   for (let r = 0; r < rows.length; r++) {
+ *   var rows = table.getRows();
+ *   for (var r = 0; r < rows.length; r++) {
  *     rows[r].setNum('id', r + 10);
  *   }
  *
@@ -38187,7 +37742,7 @@ p5.TableRow.prototype.setNum = function(column, value) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -38196,9 +37751,9 @@ p5.TableRow.prototype.setNum = function(column, value) {
  * }
  *
  * function setup() {
- *   let rows = table.getRows();
- *   for (let r = 0; r < rows.length; r++) {
- *     let name = rows[r].getString('name');
+ *   var rows = table.getRows();
+ *   for (var r = 0; r < rows.length; r++) {
+ *     var name = rows[r].getString('name');
  *     rows[r].setString('name', 'A ' + name + ' named George');
  *   }
  *
@@ -38232,7 +37787,7 @@ p5.TableRow.prototype.setString = function(column, value) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -38241,9 +37796,9 @@ p5.TableRow.prototype.setString = function(column, value) {
  * }
  *
  * function setup() {
- *   let names = [];
- *   let rows = table.getRows();
- *   for (let r = 0; r < rows.length; r++) {
+ *   var names = [];
+ *   var rows = table.getRows();
+ *   for (var r = 0; r < rows.length; r++) {
  *     names.push(rows[r].get('name'));
  *   }
  *
@@ -38280,7 +37835,7 @@ p5.TableRow.prototype.get = function(column) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -38289,11 +37844,11 @@ p5.TableRow.prototype.get = function(column) {
  * }
  *
  * function setup() {
- *   let rows = table.getRows();
- *   let minId = Infinity;
- *   let maxId = -Infinity;
- *   for (let r = 0; r < rows.length; r++) {
- *     let id = rows[r].getNum('id');
+ *   var rows = table.getRows();
+ *   var minId = Infinity;
+ *   var maxId = -Infinity;
+ *   for (var r = 0; r < rows.length; r++) {
+ *     var id = rows[r].getNum('id');
  *     minId = min(minId, id);
  *     maxId = min(maxId, id);
  *   }
@@ -38336,7 +37891,7 @@ p5.TableRow.prototype.getNum = function(column) {
  * // 1,Panthera pardus,Leopard
  * // 2,Equus zebra,Zebra
  *
- * let table;
+ * var table;
  *
  * function preload() {
  *   //my table is comma separated value "csv"
@@ -38345,10 +37900,10 @@ p5.TableRow.prototype.getNum = function(column) {
  * }
  *
  * function setup() {
- *   let rows = table.getRows();
- *   let longest = '';
- *   for (let r = 0; r < rows.length; r++) {
- *     let species = rows[r].getString('species');
+ *   var rows = table.getRows();
+ *   var longest = '';
+ *   for (var r = 0; r < rows.length; r++) {
+ *     var species = rows[r].getString('species');
  *     if (longest.length < species.length) {
  *       longest = species;
  *     }
@@ -38371,7 +37926,7 @@ p5.TableRow.prototype.getString = function(column) {
 
 module.exports = p5;
 
-},{"../core/main":23}],49:[function(_dereq_,module,exports){
+},{"../core/main":24}],50:[function(_dereq_,module,exports){
 /**
  * @module IO
  * @submodule XML
@@ -38400,19 +37955,19 @@ var p5 = _dereq_('../core/main');
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let children = xml.getChildren('animal');
+ *   var children = xml.getChildren('animal');
  *
- *   for (let i = 0; i < children.length; i++) {
- *     let id = children[i].getNum('id');
- *     let coloring = children[i].getString('species');
- *     let name = children[i].getContent();
+ *   for (var i = 0; i < children.length; i++) {
+ *     var id = children[i].getNum('id');
+ *     var coloring = children[i].getString('species');
+ *     var name = children[i].getContent();
  *     print(id + ', ' + coloring + ', ' + name);
  *   }
  * }
@@ -38427,13 +37982,12 @@ var p5 = _dereq_('../core/main');
  * no image displayed
  *
  */
-p5.XML = function(DOM) {
-  if (!DOM) {
-    var xmlDoc = document.implementation.createDocument(null, 'doc');
-    this.DOM = xmlDoc.createElement('root');
-  } else {
-    this.DOM = DOM;
-  }
+p5.XML = function() {
+  this.name = null; //done
+  this.attributes = {}; //done
+  this.children = [];
+  this.parent = null;
+  this.content = null; //done
 };
 
 /**
@@ -38454,15 +38008,15 @@ p5.XML = function(DOM) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let children = xml.getChildren('animal');
- *   let parent = children[1].getParent();
+ *   var children = xml.getChildren('animal');
+ *   var parent = children[1].getParent();
  *   print(parent.getName());
  * }
  *
@@ -38471,7 +38025,7 @@ p5.XML = function(DOM) {
  * </code></div>
  */
 p5.XML.prototype.getParent = function() {
-  return new p5.XML(this.DOM.parentElement);
+  return this.parent;
 };
 
 /**
@@ -38491,7 +38045,7 @@ p5.XML.prototype.getParent = function() {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
@@ -38506,7 +38060,7 @@ p5.XML.prototype.getParent = function() {
  * </code></div>
  */
 p5.XML.prototype.getName = function() {
-  return this.DOM.tagName;
+  return this.name;
 };
 
 /**
@@ -38526,7 +38080,7 @@ p5.XML.prototype.getName = function() {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
@@ -38544,15 +38098,7 @@ p5.XML.prototype.getName = function() {
  * </code></div>
  */
 p5.XML.prototype.setName = function(name) {
-  var content = this.DOM.innerHTML;
-  var attributes = this.DOM.attributes;
-  var xmlDoc = document.implementation.createDocument(null, 'default');
-  var newDOM = xmlDoc.createElement(name);
-  newDOM.innerHTML = content;
-  for (var i = 0; i < attributes.length; i++) {
-    newDOM.setAttribute(attributes[i].nodeName, attributes.nodeValue);
-  }
-  this.DOM = newDOM;
+  this.name = name;
 };
 
 /**
@@ -38573,7 +38119,7 @@ p5.XML.prototype.setName = function(name) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
@@ -38588,7 +38134,7 @@ p5.XML.prototype.setName = function(name) {
  * </code></div>
  */
 p5.XML.prototype.hasChildren = function() {
-  return this.DOM.children.length > 0;
+  return this.children.length > 0;
 };
 
 /**
@@ -38610,7 +38156,7 @@ p5.XML.prototype.hasChildren = function() {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
@@ -38625,11 +38171,9 @@ p5.XML.prototype.hasChildren = function() {
  * </code></div>
  */
 p5.XML.prototype.listChildren = function() {
-  var arr = [];
-  for (var i = 0; i < this.DOM.childNodes.length; i++) {
-    arr.push(this.DOM.childNodes[i].nodeName);
-  }
-  return arr;
+  return this.children.map(function(c) {
+    return c.name;
+  });
 };
 
 /**
@@ -38652,16 +38196,16 @@ p5.XML.prototype.listChildren = function() {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let animals = xml.getChildren('animal');
+ *   var animals = xml.getChildren('animal');
  *
- *   for (let i = 0; i < animals.length; i++) {
+ *   for (var i = 0; i < animals.length; i++) {
  *     print(animals[i].getContent());
  *   }
  * }
@@ -38674,19 +38218,13 @@ p5.XML.prototype.listChildren = function() {
  */
 p5.XML.prototype.getChildren = function(param) {
   if (param) {
-    return elementsToP5XML(this.DOM.getElementsByTagName(param));
+    return this.children.filter(function(c) {
+      return c.name === param;
+    });
   } else {
-    return elementsToP5XML(this.DOM.children);
+    return this.children;
   }
 };
-
-function elementsToP5XML(elements) {
-  var arr = [];
-  for (var i = 0; i < elements.length; i++) {
-    arr.push(new p5.XML(elements[i]));
-  }
-  return arr;
-}
 
 /**
  * Returns the first of the element's children that matches the name parameter
@@ -38708,14 +38246,14 @@ function elementsToP5XML(elements) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let firstChild = xml.getChild('animal');
+ *   var firstChild = xml.getChild('animal');
  *   print(firstChild.getContent());
  * }
  *
@@ -38723,14 +38261,14 @@ function elementsToP5XML(elements) {
  * // "Goat"
  * </code></div>
  * <div class='norender'><code>
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let secondChild = xml.getChild(1);
+ *   var secondChild = xml.getChild(1);
  *   print(secondChild.getContent());
  * }
  *
@@ -38740,12 +38278,12 @@ function elementsToP5XML(elements) {
  */
 p5.XML.prototype.getChild = function(param) {
   if (typeof param === 'string') {
-    for (var i = 0; i < this.DOM.children.length; i++) {
-      var child = this.DOM.children[i];
-      if (child.tagName === param) return new p5.XML(child);
+    for (var i = 0; i < this.children.length; i++) {
+      var child = this.children[i];
+      if (child.name === param) return child;
     }
   } else {
-    return new p5.XML(this.DOM.children[param]);
+    return this.children[param];
   }
 };
 
@@ -38769,21 +38307,20 @@ p5.XML.prototype.getChild = function(param) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let child = new p5.XML();
- *   child.setName('animal');
+ *   var child = new p5.XML();
  *   child.setAttribute('id', '3');
  *   child.setAttribute('species', 'Ornithorhynchus anatinus');
  *   child.setContent('Platypus');
  *   xml.addChild(child);
  *
- *   let animals = xml.getChildren('animal');
+ *   var animals = xml.getChildren('animal');
  *   print(animals[animals.length - 1].getContent());
  * }
  *
@@ -38795,7 +38332,7 @@ p5.XML.prototype.getChild = function(param) {
  */
 p5.XML.prototype.addChild = function(node) {
   if (node instanceof p5.XML) {
-    this.DOM.appendChild(node.DOM);
+    this.children.push(node);
   } else {
     // PEND
   }
@@ -38818,7 +38355,7 @@ p5.XML.prototype.addChild = function(node) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
@@ -38826,8 +38363,8 @@ p5.XML.prototype.addChild = function(node) {
  *
  * function setup() {
  *   xml.removeChild('animal');
- *   let children = xml.getChildren();
- *   for (let i = 0; i < children.length; i++) {
+ *   var children = xml.getChildren();
+ *   for (var i = 0; i < children.length; i++) {
  *     print(children[i].getContent());
  *   }
  * }
@@ -38837,7 +38374,7 @@ p5.XML.prototype.addChild = function(node) {
  * // "Zebra"
  * </code></div>
  * <div class='norender'><code>
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
@@ -38845,8 +38382,8 @@ p5.XML.prototype.addChild = function(node) {
  *
  * function setup() {
  *   xml.removeChild(1);
- *   let children = xml.getChildren();
- *   for (let i = 0; i < children.length; i++) {
+ *   var children = xml.getChildren();
+ *   for (var i = 0; i < children.length; i++) {
  *     print(children[i].getContent());
  *   }
  * }
@@ -38859,8 +38396,8 @@ p5.XML.prototype.addChild = function(node) {
 p5.XML.prototype.removeChild = function(param) {
   var ind = -1;
   if (typeof param === 'string') {
-    for (var i = 0; i < this.DOM.children.length; i++) {
-      if (this.DOM.children[i].tagName === param) {
+    for (var i = 0; i < this.children.length; i++) {
+      if (this.children[i].name === param) {
         ind = i;
         break;
       }
@@ -38869,7 +38406,7 @@ p5.XML.prototype.removeChild = function(param) {
     ind = param;
   }
   if (ind !== -1) {
-    this.DOM.removeChild(this.DOM.children[ind]);
+    this.children.splice(ind, 1);
   }
 };
 
@@ -38890,14 +38427,14 @@ p5.XML.prototype.removeChild = function(param) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let firstChild = xml.getChild('animal');
+ *   var firstChild = xml.getChild('animal');
  *   print(firstChild.getAttributeCount());
  * }
  *
@@ -38906,7 +38443,7 @@ p5.XML.prototype.removeChild = function(param) {
  * </code></div>
  */
 p5.XML.prototype.getAttributeCount = function() {
-  return this.DOM.attributes.length;
+  return Object.keys(this.attributes).length;
 };
 
 /**
@@ -38927,14 +38464,14 @@ p5.XML.prototype.getAttributeCount = function() {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let firstChild = xml.getChild('animal');
+ *   var firstChild = xml.getChild('animal');
  *   print(firstChild.listAttributes());
  * }
  *
@@ -38943,12 +38480,7 @@ p5.XML.prototype.getAttributeCount = function() {
  * </code></div>
  */
 p5.XML.prototype.listAttributes = function() {
-  var arr = [];
-  for (var i = 0; i < this.DOM.attributes.length; i++) {
-    var attribute = this.DOM.attributes[i];
-    arr.push(attribute.nodeName);
-  }
-  return arr;
+  return Object.keys(this.attributes);
 };
 
 /**
@@ -38969,14 +38501,14 @@ p5.XML.prototype.listAttributes = function() {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let firstChild = xml.getChild('animal');
+ *   var firstChild = xml.getChild('animal');
  *   print(firstChild.hasAttribute('species'));
  *   print(firstChild.hasAttribute('color'));
  * }
@@ -38987,12 +38519,7 @@ p5.XML.prototype.listAttributes = function() {
  * </code></div>
  */
 p5.XML.prototype.hasAttribute = function(name) {
-  var obj = {};
-  for (var i = 0; i < this.DOM.attributes.length; i++) {
-    var attribute = this.DOM.attributes[i];
-    obj[attribute.nodeName] = attribute.nodeValue;
-  }
-  return obj[name] ? true : false;
+  return this.attributes[name] ? true : false;
 };
 
 /**
@@ -39017,14 +38544,14 @@ p5.XML.prototype.hasAttribute = function(name) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let firstChild = xml.getChild('animal');
+ *   var firstChild = xml.getChild('animal');
  *   print(firstChild.getNum('id'));
  * }
  *
@@ -39033,12 +38560,7 @@ p5.XML.prototype.hasAttribute = function(name) {
  * </code></div>
  */
 p5.XML.prototype.getNum = function(name, defaultValue) {
-  var obj = {};
-  for (var i = 0; i < this.DOM.attributes.length; i++) {
-    var attribute = this.DOM.attributes[i];
-    obj[attribute.nodeName] = attribute.nodeValue;
-  }
-  return Number(obj[name]) || defaultValue || 0;
+  return Number(this.attributes[name]) || defaultValue || 0;
 };
 
 /**
@@ -39063,14 +38585,14 @@ p5.XML.prototype.getNum = function(name, defaultValue) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let firstChild = xml.getChild('animal');
+ *   var firstChild = xml.getChild('animal');
  *   print(firstChild.getString('species'));
  * }
  *
@@ -39079,12 +38601,7 @@ p5.XML.prototype.getNum = function(name, defaultValue) {
  * </code></div>
  */
 p5.XML.prototype.getString = function(name, defaultValue) {
-  var obj = {};
-  for (var i = 0; i < this.DOM.attributes.length; i++) {
-    var attribute = this.DOM.attributes[i];
-    obj[attribute.nodeName] = attribute.nodeValue;
-  }
-  return obj[name] ? String(obj[name]) : defaultValue || null;
+  return String(this.attributes[name]) || defaultValue || null;
 };
 
 /**
@@ -39106,14 +38623,14 @@ p5.XML.prototype.getString = function(name, defaultValue) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let firstChild = xml.getChild('animal');
+ *   var firstChild = xml.getChild('animal');
  *   print(firstChild.getString('species'));
  *   firstChild.setAttribute('species', 'Jamides zebra');
  *   print(firstChild.getString('species'));
@@ -39125,7 +38642,9 @@ p5.XML.prototype.getString = function(name, defaultValue) {
  * </code></div>
  */
 p5.XML.prototype.setAttribute = function(name, value) {
-  this.DOM.setAttribute(name, value);
+  if (this.attributes[name]) {
+    this.attributes[name] = value;
+  }
 };
 
 /**
@@ -39147,14 +38666,14 @@ p5.XML.prototype.setAttribute = function(name, value) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let firstChild = xml.getChild('animal');
+ *   var firstChild = xml.getChild('animal');
  *   print(firstChild.getContent());
  * }
  *
@@ -39163,10 +38682,7 @@ p5.XML.prototype.setAttribute = function(name, value) {
  * </code></div>
  */
 p5.XML.prototype.getContent = function(defaultValue) {
-  var str;
-  str = this.DOM.textContent;
-  str = str.replace(/\s\s+/g, ',');
-  return str || defaultValue || null;
+  return this.content || defaultValue || null;
 };
 
 /**
@@ -39186,14 +38702,14 @@ p5.XML.prototype.getContent = function(defaultValue) {
  * //   &lt;animal id="2" species="Equus zebra">Zebra&lt;/animal&gt;
  * // &lt;/mammals&gt;
  *
- * let xml;
+ * var xml;
  *
  * function preload() {
  *   xml = loadXML('assets/mammals.xml');
  * }
  *
  * function setup() {
- *   let firstChild = xml.getChild('animal');
+ *   var firstChild = xml.getChild('animal');
  *   print(firstChild.getContent());
  *   firstChild.setContent('Mountain Goat');
  *   print(firstChild.getContent());
@@ -39205,45 +38721,50 @@ p5.XML.prototype.getContent = function(defaultValue) {
  * </code></div>
  */
 p5.XML.prototype.setContent = function(content) {
-  if (!this.DOM.children.length) {
-    this.DOM.textContent = content;
+  if (!this.children.length) {
+    this.content = content;
   }
 };
 
+/* HELPERS */
 /**
- * Serializes the element into a string. This function is useful for preparing
- * the content to be sent over a http request or saved to file.
+ * This method is called while the parsing of XML (when loadXML() is
+ * called). The difference between this method and the setContent()
+ * method defined later is that this one is used to set the content
+ * when the node in question has more nodes under it and so on and
+ * not directly text content. While in the other one is used when
+ * the node in question directly has text inside it.
  *
- * @method serialize
- * @return {String} Serialized string of the element
- * @example
- * <div class='norender'><code>
- * let xml;
- *
- * function preload() {
- *   xml = loadXML('assets/mammals.xml');
- * }
- *
- * function setup() {
- *   print(xml.serialize());
- * }
- *
- * // Sketch prints:
- * // <mammals>
- * //   <animal id="0" species="Capra hircus">Goat</animal>
- * //   <animal id="1" species="Panthera pardus">Leopard</animal>
- * //   <animal id="2" species="Equus zebra">Zebra</animal>
- * // </mammals>
- * </code></div>
  */
-p5.XML.prototype.serialize = function() {
-  var xmlSerializer = new XMLSerializer();
-  return xmlSerializer.serializeToString(this.DOM);
+p5.XML.prototype._setCont = function(content) {
+  var str;
+  str = content;
+  str = str.replace(/\s\s+/g, ',');
+  //str = str.split(',');
+  this.content = str;
+};
+
+/**
+ * This method is called while the parsing of XML (when loadXML() is
+ * called). The XML node is passed and its attributes are stored in the
+ * <a href="#/p5.XML">p5.XML</a>'s attribute Object.
+ *
+ */
+p5.XML.prototype._setAttributes = function(node) {
+  var att = {};
+  var attributes = node.attributes;
+  if (attributes) {
+    for (var i = 0; i < attributes.length; i++) {
+      var attribute = attributes[i];
+      att[attribute.nodeName] = attribute.nodeValue;
+    }
+  }
+  this.attributes = att;
 };
 
 module.exports = p5;
 
-},{"../core/main":23}],50:[function(_dereq_,module,exports){
+},{"../core/main":24}],51:[function(_dereq_,module,exports){
 /**
  * @module Math
  * @submodule Calculation
@@ -39265,8 +38786,8 @@ var p5 = _dereq_('../core/main');
  * @example
  * <div class = "norender"><code>
  * function setup() {
- *   let x = -3;
- *   let y = abs(x);
+ *   var x = -3;
+ *   var y = abs(x);
  *
  *   print(x); // -3
  *   print(y); // 3
@@ -39292,12 +38813,12 @@ p5.prototype.abs = Math.abs;
  * function draw() {
  *   background(200);
  *   // map, mouseX between 0 and 5.
- *   let ax = map(mouseX, 0, 100, 0, 5);
- *   let ay = 66;
+ *   var ax = map(mouseX, 0, 100, 0, 5);
+ *   var ay = 66;
  *
  *   //Get the ceiling of the mapped number.
- *   let bx = ceil(map(mouseX, 0, 100, 0, 5));
- *   let by = 33;
+ *   var bx = ceil(map(mouseX, 0, 100, 0, 5));
+ *   var by = 33;
  *
  *   // Multiply the mapped numbers by 20 to more easily
  *   // see the changes.
@@ -39332,14 +38853,14 @@ p5.prototype.ceil = Math.ceil;
  * function draw() {
  *   background(200);
  *
- *   let leftWall = 25;
- *   let rightWall = 75;
+ *   var leftWall = 25;
+ *   var rightWall = 75;
  *
  *   // xm is just the mouseX, while
  *   // xc is the mouseX, but constrained
  *   // between the leftWall and rightWall!
- *   let xm = mouseX;
- *   let xc = constrain(mouseX, leftWall, rightWall);
+ *   var xm = mouseX;
+ *   var xc = constrain(mouseX, leftWall, rightWall);
  *
  *   // Draw the walls.
  *   stroke(150);
@@ -39382,10 +38903,10 @@ p5.prototype.constrain = function(n, low, high) {
  *   background(200);
  *   fill(0);
  *
- *   let x1 = 10;
- *   let y1 = 90;
- *   let x2 = mouseX;
- *   let y2 = mouseY;
+ *   var x1 = 10;
+ *   var y1 = 90;
+ *   var x2 = mouseX;
+ *   var y2 = mouseY;
  *
  *   line(x1, y1, x2, y2);
  *   ellipse(x1, y1, 7, 7);
@@ -39393,7 +38914,7 @@ p5.prototype.constrain = function(n, low, high) {
  *
  *   // d is the length of the line
  *   // the distance from point 1 to point 2.
- *   let d = int(dist(x1, y1, x2, y2));
+ *   var d = int(dist(x1, y1, x2, y2));
  *
  *   // Let's write d along the line we are drawing!
  *   push();
@@ -39446,12 +38967,12 @@ p5.prototype.dist = function() {
  *   background(200);
  *
  *   // Compute the exp() function with a value between 0 and 2
- *   let xValue = map(mouseX, 0, width, 0, 2);
- *   let yValue = exp(xValue);
+ *   var xValue = map(mouseX, 0, width, 0, 2);
+ *   var yValue = exp(xValue);
  *
- *   let y = map(yValue, 0, 8, height, 0);
+ *   var y = map(yValue, 0, 8, height, 0);
  *
- *   let legend = 'exp (' + nfc(xValue, 3) + ')\n= ' + nf(yValue, 1, 4);
+ *   var legend = 'exp (' + nfc(xValue, 3) + ')\n= ' + nf(yValue, 1, 4);
  *   stroke(150);
  *   line(mouseX, y, mouseX, height);
  *   fill(0);
@@ -39464,7 +38985,7 @@ p5.prototype.dist = function() {
  *   noFill();
  *   stroke(0);
  *   beginShape();
- *   for (let x = 0; x < width; x++) {
+ *   for (var x = 0; x < width; x++) {
  *     xValue = map(x, 0, width, 0, 2);
  *     yValue = exp(xValue);
  *     y = map(yValue, 0, 8, height, 0);
@@ -39495,12 +39016,12 @@ p5.prototype.exp = Math.exp;
  * function draw() {
  *   background(200);
  *   //map, mouseX between 0 and 5.
- *   let ax = map(mouseX, 0, 100, 0, 5);
- *   let ay = 66;
+ *   var ax = map(mouseX, 0, 100, 0, 5);
+ *   var ay = 66;
  *
  *   //Get the floor of the mapped number.
- *   let bx = floor(map(mouseX, 0, 100, 0, 5));
- *   let by = 33;
+ *   var bx = floor(map(mouseX, 0, 100, 0, 5));
+ *   var by = 33;
  *
  *   // Multiply the mapped numbers by 20 to more easily
  *   // see the changes.
@@ -39526,28 +39047,25 @@ p5.prototype.floor = Math.floor;
  * Calculates a number between two numbers at a specific increment. The amt
  * parameter is the amount to interpolate between the two values where 0.0
  * equal to the first point, 0.1 is very near the first point, 0.5 is
- * half-way in between, and 1.0 is equal to the second point. If the
- * value of amt is more than 1.0 or less than 0.0, the number will be
- * calculated accordingly in the ratio of the two given numbers. The lerp
- * function is convenient for creating motion along a straight
- * path and for drawing dotted lines.
+ * half-way in between, etc. The lerp function is convenient for creating
+ * motion along a straight path and for drawing dotted lines.
  *
  * @method lerp
  * @param  {Number} start first value
  * @param  {Number} stop  second value
- * @param  {Number} amt   number
+ * @param  {Number} amt   number between 0.0 and 1.0
  * @return {Number}       lerped value
  * @example
  * <div><code>
  * function setup() {
  *   background(200);
- *   let a = 20;
- *   let b = 80;
- *   let c = lerp(a, b, 0.2);
- *   let d = lerp(a, b, 0.5);
- *   let e = lerp(a, b, 0.8);
+ *   var a = 20;
+ *   var b = 80;
+ *   var c = lerp(a, b, 0.2);
+ *   var d = lerp(a, b, 0.5);
+ *   var e = lerp(a, b, 0.8);
  *
- *   let y = 50;
+ *   var y = 50;
  *
  *   strokeWeight(5);
  *   stroke(0); // Draw the original points in black
@@ -39582,19 +39100,18 @@ p5.prototype.lerp = function(start, stop, amt) {
  * <div><code>
  * function draw() {
  *   background(200);
- *   let maxX = 2.8;
- *   let maxY = 1.5;
+ *   var maxX = 2.8;
+ *   var maxY = 1.5;
  *
  *   // Compute the natural log of a value between 0 and maxX
- *   let xValue = map(mouseX, 0, width, 0, maxX);
- *   let yValue, y;
+ *   var xValue = map(mouseX, 0, width, 0, maxX);
  *   if (xValue > 0) {
     // Cannot take the log of a negative number.
- *     yValue = log(xValue);
- *     y = map(yValue, -maxY, maxY, height, 0);
+ *     var yValue = log(xValue);
+ *     var y = map(yValue, -maxY, maxY, height, 0);
  *
  *     // Display the calculation occurring.
- *     let legend = 'log(' + nf(xValue, 1, 2) + ')\n= ' + nf(yValue, 1, 3);
+ *     var legend = 'log(' + nf(xValue, 1, 2) + ')\n= ' + nf(yValue, 1, 3);
  *     stroke(150);
  *     line(mouseX, y, mouseX, height);
  *     fill(0);
@@ -39608,7 +39125,7 @@ p5.prototype.lerp = function(start, stop, amt) {
  *   noFill();
  *   stroke(0);
  *   beginShape();
- *   for (let x = 0; x < width; x++) {
+ *   for (var x = 0; x < width; x++) {
  *     xValue = map(x, 0, width, 0, maxX);
  *     yValue = log(xValue);
  *     y = map(yValue, -maxY, maxY, height, 0);
@@ -39640,10 +39157,10 @@ p5.prototype.log = Math.log;
  * @example
  * <div><code>
  * function setup() {
- *   let x1 = 20;
- *   let x2 = 80;
- *   let y1 = 30;
- *   let y2 = 70;
+ *   var x1 = 20;
+ *   var x2 = 80;
+ *   var y1 = 30;
+ *   var y2 = 70;
  *
  *   line(0, 0, x1, y1);
  *   print(mag(x1, y1)); // Prints "36.05551275463989"
@@ -39682,8 +39199,8 @@ p5.prototype.mag = function(x, y) {
  * @return {Number}        remapped number
  * @example
  *   <div><code>
- * let value = 25;
- * let m = map(value, 0, 100, 0, width);
+ * var value = 25;
+ * var m = map(value, 0, 100, 0, width);
  * ellipse(m, 50, 10, 10);
 </code></div>
  *
@@ -39694,11 +39211,11 @@ p5.prototype.mag = function(x, y) {
  *
  * function draw() {
  *   background(204);
- *   let x1 = map(mouseX, 0, width, 25, 75);
+ *   var x1 = map(mouseX, 0, width, 25, 75);
  *   ellipse(x1, 25, 25, 25);
  *   //This ellipse is constrained to the 0-100 range
  *   //after setting withinBounds to true
- *   let x2 = map(mouseX, 0, width, 0, 100, true);
+ *   var x2 = map(mouseX, 0, width, 0, 100, true);
  *   ellipse(x2, 75, 25, 25);
  * }
 </code></div>
@@ -39735,18 +39252,18 @@ p5.prototype.map = function(n, start1, stop1, start2, stop2, withinBounds) {
  * function setup() {
  *   // Change the elements in the array and run the sketch
  *   // to show how max() works!
- *   let numArray = [2, 1, 5, 4, 8, 9];
+ *   var numArray = [2, 1, 5, 4, 8, 9];
  *   fill(0);
  *   noStroke();
  *   text('Array Elements', 0, 10);
  *   // Draw all numbers in the array
- *   let spacing = 15;
- *   let elemsY = 25;
- *   for (let i = 0; i < numArray.length; i++) {
+ *   var spacing = 15;
+ *   var elemsY = 25;
+ *   for (var i = 0; i < numArray.length; i++) {
  *     text(numArray[i], i * spacing, elemsY);
  *   }
- *   let maxX = 33;
- *   let maxY = 80;
+ *   var maxX = 33;
+ *   var maxY = 80;
  *   // Draw the Maximum value in the array.
  *   textSize(32);
  *   text(max(numArray), maxX, maxY);
@@ -39785,18 +39302,18 @@ p5.prototype.max = function() {
  * function setup() {
  *   // Change the elements in the array and run the sketch
  *   // to show how min() works!
- *   let numArray = [2, 1, 5, 4, 8, 9];
+ *   var numArray = [2, 1, 5, 4, 8, 9];
  *   fill(0);
  *   noStroke();
  *   text('Array Elements', 0, 10);
  *   // Draw all numbers in the array
- *   let spacing = 15;
- *   let elemsY = 25;
- *   for (let i = 0; i < numArray.length; i++) {
+ *   var spacing = 15;
+ *   var elemsY = 25;
+ *   for (var i = 0; i < numArray.length; i++) {
  *     text(numArray[i], i * spacing, elemsY);
  *   }
- *   let maxX = 33;
- *   let maxY = 80;
+ *   var maxX = 33;
+ *   var maxY = 80;
  *   // Draw the Minimum value in the array.
  *   textSize(32);
  *   text(min(numArray), maxX, maxY);
@@ -39837,20 +39354,20 @@ p5.prototype.min = function() {
  * <div><code>
  * function draw() {
  *   background(200);
- *   let currentNum = mouseX;
- *   let lowerBound = 0;
- *   let upperBound = width; //100;
- *   let normalized = norm(currentNum, lowerBound, upperBound);
- *   let lineY = 70;
+ *   var currentNum = mouseX;
+ *   var lowerBound = 0;
+ *   var upperBound = width; //100;
+ *   var normalized = norm(currentNum, lowerBound, upperBound);
+ *   var lineY = 70;
  *   line(0, lineY, width, lineY);
  *   //Draw an ellipse mapped to the non-normalized value.
  *   noStroke();
  *   fill(50);
- *   let s = 7; // ellipse size
+ *   var s = 7; // ellipse size
  *   ellipse(currentNum, lineY, s, s);
  *
  *   // Draw the guide
- *   let guideY = lineY + 15;
+ *   var guideY = lineY + 15;
  *   text('0', 0, guideY);
  *   textAlign(RIGHT);
  *   text('100', width, guideY);
@@ -39859,8 +39376,8 @@ p5.prototype.min = function() {
  *   textAlign(LEFT);
  *   fill(0);
  *   textSize(32);
- *   let normalY = 40;
- *   let normalX = 20;
+ *   var normalY = 40;
+ *   var normalX = 20;
  *   text(normalized, normalX, normalY);
  * }
  * </code></div>
@@ -39889,8 +39406,8 @@ p5.prototype.norm = function(n, start, stop) {
  * <div><code>
  * function setup() {
  *   //Exponentially increase the size of an ellipse.
- *   let eSize = 3; // Original Size
- *   let eLoc = 10; // Original Location
+ *   var eSize = 3; // Original Size
+ *   var eLoc = 10; // Original Location
  *
  *   ellipse(eLoc, eLoc, eSize, eSize);
  *
@@ -39920,12 +39437,12 @@ p5.prototype.pow = Math.pow;
  * function draw() {
  *   background(200);
  *   //map, mouseX between 0 and 5.
- *   let ax = map(mouseX, 0, 100, 0, 5);
- *   let ay = 66;
+ *   var ax = map(mouseX, 0, 100, 0, 5);
+ *   var ay = 66;
  *
  *   // Round the mapped number.
- *   let bx = round(map(mouseX, 0, 100, 0, 5));
- *   let by = 33;
+ *   var bx = round(map(mouseX, 0, 100, 0, 5));
+ *   var by = 33;
  *
  *   // Multiply the mapped numbers by 20 to more easily
  *   // see the changes.
@@ -39959,11 +39476,11 @@ p5.prototype.round = Math.round;
  * <div><code>
  * function draw() {
  *   background(200);
- *   let eSize = 7;
- *   let x1 = map(mouseX, 0, width, 0, 10);
- *   let y1 = 80;
- *   let x2 = sq(x1);
- *   let y2 = 20;
+ *   var eSize = 7;
+ *   var x1 = map(mouseX, 0, width, 0, 10);
+ *   var y1 = 80;
+ *   var x2 = sq(x1);
+ *   var y2 = 20;
  *
  *   // Draw the non-squared.
  *   line(0, y1, width, y1);
@@ -39978,7 +39495,7 @@ p5.prototype.round = Math.round;
  *   line(0, height / 2, width, height / 2);
  *
  *   // Draw text.
- *   let spacing = 15;
+ *   var spacing = 15;
  *   noStroke();
  *   fill(0);
  *   text('x = ' + x1, 0, y1 + spacing);
@@ -40007,11 +39524,11 @@ p5.prototype.sq = function(n) {
  * <div><code>
  * function draw() {
  *   background(200);
- *   let eSize = 7;
- *   let x1 = mouseX;
- *   let y1 = 80;
- *   let x2 = sqrt(x1);
- *   let y2 = 20;
+ *   var eSize = 7;
+ *   var x1 = mouseX;
+ *   var y1 = 80;
+ *   var x2 = sqrt(x1);
+ *   var y2 = 20;
  *
  *   // Draw the non-squared.
  *   line(0, y1, width, y1);
@@ -40028,7 +39545,7 @@ p5.prototype.sq = function(n) {
  *   // Draw text.
  *   noStroke();
  *   fill(0);
- *   let spacing = 15;
+ *   var spacing = 15;
  *   text('x = ' + x1, 0, y1 + spacing);
  *   text('sqrt(x) = ' + x2, 0, y2 + spacing);
  * }
@@ -40084,7 +39601,7 @@ function hypot(x, y, z) {
 
 module.exports = p5;
 
-},{"../core/main":23}],51:[function(_dereq_,module,exports){
+},{"../core/main":24}],52:[function(_dereq_,module,exports){
 /**
  * @module Math
  * @submodule Math
@@ -40136,7 +39653,7 @@ p5.prototype.createVector = function(x, y, z) {
 
 module.exports = p5;
 
-},{"../core/main":23}],52:[function(_dereq_,module,exports){
+},{"../core/main":24}],53:[function(_dereq_,module,exports){
 //////////////////////////////////////////////////////////////
 
 // http://mrl.nyu.edu/~perlin/noise/
@@ -40213,23 +39730,23 @@ var perlin; // will be initialized lazily by noise() or noiseSeed()
  * @example
  * <div>
  * <code>
- * let xoff = 0.0;
+ * var xoff = 0.0;
  *
  * function draw() {
  *   background(204);
  *   xoff = xoff + 0.01;
- *   let n = noise(xoff) * width;
+ *   var n = noise(xoff) * width;
  *   line(n, 0, n, height);
  * }
  * </code>
  * </div>
  * <div>
- * <code>let noiseScale=0.02;
+ * <code>var noiseScale=0.02;
  *
  * function draw() {
  *   background(0);
- *   for (let x=0; x < width; x++) {
- *     let noiseVal = noise((mouseX+x)*noiseScale, mouseY*noiseScale);
+ *   for (var x=0; x < width; x++) {
+ *     var noiseVal = noise((mouseX+x)*noiseScale, mouseY*noiseScale);
  *     stroke(noiseVal*255);
  *     line(x, mouseY+noiseVal*80, x, height);
  *   }
@@ -40348,8 +39865,8 @@ p5.prototype.noise = function(x, y, z) {
  * @example
  * <div>
  * <code>
- * let noiseVal;
- * let noiseScale = 0.02;
+ * var noiseVal;
+ * var noiseScale = 0.02;
  *
  * function setup() {
  *   createCanvas(100, 100);
@@ -40357,8 +39874,8 @@ p5.prototype.noise = function(x, y, z) {
  *
  * function draw() {
  *   background(0);
- *   for (let y = 0; y < height; y++) {
- *     for (let x = 0; x < width / 2; x++) {
+ *   for (var y = 0; y < height; y++) {
+ *     for (var x = 0; x < width / 2; x++) {
  *       noiseDetail(2, 0.2);
  *       noiseVal = noise((mouseX + x) * noiseScale, (mouseY + y) * noiseScale);
  *       stroke(noiseVal * 255);
@@ -40399,7 +39916,7 @@ p5.prototype.noiseDetail = function(lod, falloff) {
  * @param {Number} seed   the seed value
  * @example
  * <div>
- * <code>let xoff = 0.0;
+ * <code>var xoff = 0.0;
  *
  * function setup() {
  *   noiseSeed(99);
@@ -40408,7 +39925,7 @@ p5.prototype.noiseDetail = function(lod, falloff) {
  *
  * function draw() {
  *   xoff = xoff + .01;
- *   let n = noise(xoff) * width;
+ *   var n = noise(xoff) * width;
  *   line(n, 0, n, height);
  * }
  * </code>
@@ -40459,7 +39976,7 @@ p5.prototype.noiseSeed = function(seed) {
 
 module.exports = p5;
 
-},{"../core/main":23}],53:[function(_dereq_,module,exports){
+},{"../core/main":24}],54:[function(_dereq_,module,exports){
 /**
  * @module Math
  * @submodule Math
@@ -40497,8 +40014,8 @@ var constants = _dereq_('../core/constants');
  * @example
  * <div>
  * <code>
- * let v1 = createVector(40, 50);
- * let v2 = createVector(40, 50);
+ * var v1 = createVector(40, 50);
+ * var v2 = createVector(40, 50);
  *
  * ellipse(v1.x, v1.y, 50, 50);
  * ellipse(v2.x, v2.y, 50, 50);
@@ -40553,7 +40070,7 @@ p5.Vector = function Vector() {
  * <div class = "norender">
  * <code>
  * function setup() {
- *   let v = createVector(20, 30);
+ *   var v = createVector(20, 30);
  *   print(String(v)); // prints "p5.Vector Object : [20, 30, 0]"
  * }
  * </code>
@@ -40564,8 +40081,8 @@ p5.Vector = function Vector() {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(0, 0);
- *   let v1 = createVector(mouseX, mouseY);
+ *   var v0 = createVector(0, 0);
+ *   var v1 = createVector(mouseX, mouseY);
  *   drawArrow(v0, v1, 'black');
  *
  *   noStroke();
@@ -40581,7 +40098,7 @@ p5.Vector = function Vector() {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -40605,11 +40122,11 @@ p5.Vector.prototype.toString = function p5VectorToString() {
  * <div class="norender">
  * <code>
  * function setup() {
- *   let v = createVector(1, 2, 3);
+ *   var v = createVector(1, 2, 3);
  *   v.set(4, 5, 6); // Sets vector to [4, 5, 6]
  *
- *   let v1 = createVector(0, 0, 0);
- *   let arr = [1, 2, 3];
+ *   var v1 = createVector(0, 0, 0);
+ *   var arr = [1, 2, 3];
  *   v1.set(arr); // Sets vector to [1, 2, 3]
  * }
  * </code>
@@ -40617,7 +40134,7 @@ p5.Vector.prototype.toString = function p5VectorToString() {
  *
  * <div>
  * <code>
- * let v0, v1;
+ * var v0, v1;
  * function setup() {
  *   createCanvas(100, 100);
  *
@@ -40644,7 +40161,7 @@ p5.Vector.prototype.toString = function p5VectorToString() {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -40684,8 +40201,8 @@ p5.Vector.prototype.set = function set(x, y, z) {
  * @example
  * <div class="norender">
  * <code>
- * let v1 = createVector(1, 2, 3);
- * let v2 = v1.copy();
+ * var v1 = createVector(1, 2, 3);
+ * var v2 = v1.copy();
  * print(v1.x === v2.x && v1.y === v2.y && v1.z === v2.z);
  * // Prints "true"
  * </code>
@@ -40713,7 +40230,7 @@ p5.Vector.prototype.copy = function copy() {
  * @example
  * <div class="norender">
  * <code>
- * let v = createVector(1, 2, 3);
+ * var v = createVector(1, 2, 3);
  * v.add(4, 5, 6);
  * // v's components are set to [5, 7, 9]
  * </code>
@@ -40722,10 +40239,10 @@ p5.Vector.prototype.copy = function copy() {
  * <div class="norender">
  * <code>
  * // Static method
- * let v1 = createVector(1, 2, 3);
- * let v2 = createVector(2, 3, 4);
+ * var v1 = createVector(1, 2, 3);
+ * var v2 = createVector(2, 3, 4);
  *
- * let v3 = p5.Vector.add(v1, v2);
+ * var v3 = p5.Vector.add(v1, v2);
  * // v3 has components [3, 5, 7]
  * print(v3);
  * </code>
@@ -40737,14 +40254,14 @@ p5.Vector.prototype.copy = function copy() {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(0, 0);
- *   let v1 = createVector(mouseX, mouseY);
+ *   var v0 = createVector(0, 0);
+ *   var v1 = createVector(mouseX, mouseY);
  *   drawArrow(v0, v1, 'red');
  *
- *   let v2 = createVector(-30, 20);
+ *   var v2 = createVector(-30, 20);
  *   drawArrow(v1, v2, 'blue');
  *
- *   let v3 = p5.Vector.add(v1, v2);
+ *   var v3 = p5.Vector.add(v1, v2);
  *   drawArrow(v0, v3, 'purple');
  * }
  *
@@ -40757,7 +40274,7 @@ p5.Vector.prototype.copy = function copy() {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -40803,7 +40320,7 @@ p5.Vector.prototype.add = function add(x, y, z) {
  * @example
  * <div class="norender">
  * <code>
- * let v = createVector(4, 5, 6);
+ * var v = createVector(4, 5, 6);
  * v.sub(1, 1, 1);
  * // v's components are set to [3, 4, 5]
  * </code>
@@ -40812,10 +40329,10 @@ p5.Vector.prototype.add = function add(x, y, z) {
  * <div class="norender">
  * <code>
  * // Static method
- * let v1 = createVector(2, 3, 4);
- * let v2 = createVector(1, 2, 3);
+ * var v1 = createVector(2, 3, 4);
+ * var v2 = createVector(1, 2, 3);
  *
- * let v3 = p5.Vector.sub(v1, v2);
+ * var v3 = p5.Vector.sub(v1, v2);
  * // v3 has components [1, 1, 1]
  * print(v3);
  * </code>
@@ -40827,14 +40344,14 @@ p5.Vector.prototype.add = function add(x, y, z) {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(0, 0);
- *   let v1 = createVector(70, 50);
+ *   var v0 = createVector(0, 0);
+ *   var v1 = createVector(70, 50);
  *   drawArrow(v0, v1, 'red');
  *
- *   let v2 = createVector(mouseX, mouseY);
+ *   var v2 = createVector(mouseX, mouseY);
  *   drawArrow(v0, v2, 'blue');
  *
- *   let v3 = p5.Vector.sub(v1, v2);
+ *   var v3 = p5.Vector.sub(v1, v2);
  *   drawArrow(v2, v3, 'purple');
  * }
  *
@@ -40847,7 +40364,7 @@ p5.Vector.prototype.add = function add(x, y, z) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -40890,7 +40407,7 @@ p5.Vector.prototype.sub = function sub(x, y, z) {
  * @example
  * <div class="norender">
  * <code>
- * let v = createVector(1, 2, 3);
+ * var v = createVector(1, 2, 3);
  * v.mult(2);
  * // v's components are set to [2, 4, 6]
  * </code>
@@ -40899,8 +40416,8 @@ p5.Vector.prototype.sub = function sub(x, y, z) {
  * <div class="norender">
  * <code>
  * // Static method
- * let v1 = createVector(1, 2, 3);
- * let v2 = p5.Vector.mult(v1, 2);
+ * var v1 = createVector(1, 2, 3);
+ * var v2 = p5.Vector.mult(v1, 2);
  * // v2 has components [2, 4, 6]
  * print(v2);
  * </code>
@@ -40911,12 +40428,12 @@ p5.Vector.prototype.sub = function sub(x, y, z) {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(50, 50);
- *   let v1 = createVector(25, -25);
+ *   var v0 = createVector(50, 50);
+ *   var v1 = createVector(25, -25);
  *   drawArrow(v0, v1, 'red');
  *
- *   let num = map(mouseX, 0, width, -2, 2, true);
- *   let v2 = p5.Vector.mult(v1, num);
+ *   var num = map(mouseX, 0, width, -2, 2, true);
+ *   var v2 = p5.Vector.mult(v1, num);
  *   drawArrow(v0, v2, 'blue');
  *
  *   noStroke();
@@ -40932,7 +40449,7 @@ p5.Vector.prototype.sub = function sub(x, y, z) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -40965,7 +40482,7 @@ p5.Vector.prototype.mult = function mult(n) {
  * @example
  * <div class="norender">
  * <code>
- * let v = createVector(6, 4, 2);
+ * var v = createVector(6, 4, 2);
  * v.div(2); //v's components are set to [3, 2, 1]
  * </code>
  * </div>
@@ -40973,8 +40490,8 @@ p5.Vector.prototype.mult = function mult(n) {
  * <div class="norender">
  * <code>
  * // Static method
- * let v1 = createVector(6, 4, 2);
- * let v2 = p5.Vector.div(v1, 2);
+ * var v1 = createVector(6, 4, 2);
+ * var v2 = p5.Vector.div(v1, 2);
  * // v2 has components [3, 2, 1]
  * print(v2);
  * </code>
@@ -40985,12 +40502,12 @@ p5.Vector.prototype.mult = function mult(n) {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(0, 100);
- *   let v1 = createVector(50, -50);
+ *   var v0 = createVector(0, 100);
+ *   var v1 = createVector(50, -50);
  *   drawArrow(v0, v1, 'red');
  *
- *   let num = map(mouseX, 0, width, 10, 0.5, true);
- *   let v2 = p5.Vector.div(v1, num);
+ *   var num = map(mouseX, 0, width, 10, 0.5, true);
+ *   var v2 = p5.Vector.div(v1, num);
  *   drawArrow(v0, v2, 'blue');
  *
  *   noStroke();
@@ -41006,7 +40523,7 @@ p5.Vector.prototype.mult = function mult(n) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41044,8 +40561,8 @@ p5.Vector.prototype.div = function div(n) {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(0, 0);
- *   let v1 = createVector(mouseX, mouseY);
+ *   var v0 = createVector(0, 0);
+ *   var v1 = createVector(mouseX, mouseY);
  *   drawArrow(v0, v1, 'black');
  *
  *   noStroke();
@@ -41061,7 +40578,7 @@ p5.Vector.prototype.div = function div(n) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41070,8 +40587,8 @@ p5.Vector.prototype.div = function div(n) {
  * </div>
  * <div class="norender">
  * <code>
- * let v = createVector(20.0, 30.0, 40.0);
- * let m = v.mag();
+ * var v = createVector(20.0, 30.0, 40.0);
+ * var m = v.mag();
  * print(m); // Prints "53.85164807134504"
  * </code>
  * </div>
@@ -41092,7 +40609,7 @@ p5.Vector.prototype.mag = function mag() {
  * <div class="norender">
  * <code>
  * // Static method
- * let v1 = createVector(6, 4, 2);
+ * var v1 = createVector(6, 4, 2);
  * print(v1.magSq()); // Prints "56"
  * </code>
  * </div>
@@ -41102,8 +40619,8 @@ p5.Vector.prototype.mag = function mag() {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(0, 0);
- *   let v1 = createVector(mouseX, mouseY);
+ *   var v0 = createVector(0, 0);
+ *   var v1 = createVector(mouseX, mouseY);
  *   drawArrow(v0, v1, 'black');
  *
  *   noStroke();
@@ -41119,7 +40636,7 @@ p5.Vector.prototype.mag = function mag() {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41149,8 +40666,8 @@ p5.Vector.prototype.magSq = function magSq() {
  * @example
  * <div class="norender">
  * <code>
- * let v1 = createVector(1, 2, 3);
- * let v2 = createVector(2, 3, 4);
+ * var v1 = createVector(1, 2, 3);
+ * var v2 = createVector(2, 3, 4);
  *
  * print(v1.dot(v2)); // Prints "20"
  * </code>
@@ -41159,8 +40676,8 @@ p5.Vector.prototype.magSq = function magSq() {
  * <div class="norender">
  * <code>
  * //Static method
- * let v1 = createVector(1, 2, 3);
- * let v2 = createVector(3, 2, 1);
+ * var v1 = createVector(1, 2, 3);
+ * var v2 = createVector(3, 2, 1);
  * print(p5.Vector.dot(v1, v2)); // Prints "10"
  * </code>
  * </div>
@@ -41188,8 +40705,8 @@ p5.Vector.prototype.dot = function dot(x, y, z) {
  * @example
  * <div class="norender">
  * <code>
- * let v1 = createVector(1, 2, 3);
- * let v2 = createVector(1, 2, 3);
+ * var v1 = createVector(1, 2, 3);
+ * var v2 = createVector(1, 2, 3);
  *
  * v1.cross(v2); // v's components are [0, 0, 0]
  * </code>
@@ -41198,10 +40715,10 @@ p5.Vector.prototype.dot = function dot(x, y, z) {
  * <div class="norender">
  * <code>
  * // Static method
- * let v1 = createVector(1, 0, 0);
- * let v2 = createVector(0, 1, 0);
+ * var v1 = createVector(1, 0, 0);
+ * var v2 = createVector(0, 1, 0);
  *
- * let crossProduct = p5.Vector.cross(v1, v2);
+ * var crossProduct = p5.Vector.cross(v1, v2);
  * // crossProduct has components [0, 0, 1]
  * print(crossProduct);
  * </code>
@@ -41228,10 +40745,10 @@ p5.Vector.prototype.cross = function cross(v) {
  * @example
  * <div class="norender">
  * <code>
- * let v1 = createVector(1, 0, 0);
- * let v2 = createVector(0, 1, 0);
+ * var v1 = createVector(1, 0, 0);
+ * var v2 = createVector(0, 1, 0);
  *
- * let distance = v1.dist(v2); // distance is 1.4142...
+ * var distance = v1.dist(v2); // distance is 1.4142...
  * print(distance);
  * </code>
  * </div>
@@ -41239,10 +40756,10 @@ p5.Vector.prototype.cross = function cross(v) {
  * <div class="norender">
  * <code>
  * // Static method
- * let v1 = createVector(1, 0, 0);
- * let v2 = createVector(0, 1, 0);
+ * var v1 = createVector(1, 0, 0);
+ * var v2 = createVector(0, 1, 0);
  *
- * let distance = p5.Vector.dist(v1, v2);
+ * var distance = p5.Vector.dist(v1, v2);
  * // distance is 1.4142...
  * print(distance);
  * </code>
@@ -41253,12 +40770,12 @@ p5.Vector.prototype.cross = function cross(v) {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(0, 0);
+ *   var v0 = createVector(0, 0);
  *
- *   let v1 = createVector(70, 50);
+ *   var v1 = createVector(70, 50);
  *   drawArrow(v0, v1, 'red');
  *
- *   let v2 = createVector(mouseX, mouseY);
+ *   var v2 = createVector(mouseX, mouseY);
  *   drawArrow(v0, v2, 'blue');
  *
  *   noStroke();
@@ -41274,7 +40791,7 @@ p5.Vector.prototype.cross = function cross(v) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41297,7 +40814,7 @@ p5.Vector.prototype.dist = function dist(v) {
  * @example
  * <div class="norender">
  * <code>
- * let v = createVector(10, 20, 2);
+ * var v = createVector(10, 20, 2);
  * // v has components [10.0, 20.0, 2.0]
  * v.normalize();
  * // v's components are set to
@@ -41309,8 +40826,8 @@ p5.Vector.prototype.dist = function dist(v) {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(50, 50);
- *   let v1 = createVector(mouseX - 50, mouseY - 50);
+ *   var v0 = createVector(50, 50);
+ *   var v1 = createVector(mouseX - 50, mouseY - 50);
  *
  *   drawArrow(v0, v1, 'red');
  *   v1.normalize();
@@ -41329,7 +40846,7 @@ p5.Vector.prototype.dist = function dist(v) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41355,7 +40872,7 @@ p5.Vector.prototype.normalize = function normalize() {
  * @example
  * <div class="norender">
  * <code>
- * let v = createVector(10, 20, 2);
+ * var v = createVector(10, 20, 2);
  * // v has components [10.0, 20.0, 2.0]
  * v.limit(5);
  * // v's components are set to
@@ -41367,8 +40884,8 @@ p5.Vector.prototype.normalize = function normalize() {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(50, 50);
- *   let v1 = createVector(mouseX - 50, mouseY - 50);
+ *   var v0 = createVector(50, 50);
+ *   var v1 = createVector(mouseX - 50, mouseY - 50);
  *
  *   drawArrow(v0, v1, 'red');
  *   drawArrow(v0, v1.limit(35), 'blue');
@@ -41386,7 +40903,7 @@ p5.Vector.prototype.normalize = function normalize() {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41413,7 +40930,7 @@ p5.Vector.prototype.limit = function limit(max) {
  * @example
  * <div class="norender">
  * <code>
- * let v = createVector(10, 20, 2);
+ * var v = createVector(10, 20, 2);
  * // v has components [10.0, 20.0, 2.0]
  * v.setMag(10);
  * // v's components are set to [6.0, 8.0, 0.0]
@@ -41425,12 +40942,12 @@ p5.Vector.prototype.limit = function limit(max) {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(0, 0);
- *   let v1 = createVector(50, 50);
+ *   var v0 = createVector(0, 0);
+ *   var v1 = createVector(50, 50);
  *
  *   drawArrow(v0, v1, 'red');
  *
- *   let length = map(mouseX, 0, width, 0, 141, true);
+ *   var length = map(mouseX, 0, width, 0, 141, true);
  *   v1.setMag(length);
  *   drawArrow(v0, v1, 'blue');
  *
@@ -41447,7 +40964,7 @@ p5.Vector.prototype.limit = function limit(max) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41468,7 +40985,7 @@ p5.Vector.prototype.setMag = function setMag(n) {
  * <div class = "norender">
  * <code>
  * function setup() {
- *   let v1 = createVector(30, 50);
+ *   var v1 = createVector(30, 50);
  *   print(v1.heading()); // 1.0303768265243125
  *
  *   v1 = createVector(40, 50);
@@ -41485,12 +41002,12 @@ p5.Vector.prototype.setMag = function setMag(n) {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(50, 50);
- *   let v1 = createVector(mouseX - 50, mouseY - 50);
+ *   var v0 = createVector(50, 50);
+ *   var v1 = createVector(mouseX - 50, mouseY - 50);
  *
  *   drawArrow(v0, v1, 'black');
  *
- *   let myHeading = v1.heading();
+ *   var myHeading = v1.heading();
  *   noStroke();
  *   text(
  *     'vector heading: ' +
@@ -41514,7 +41031,7 @@ p5.Vector.prototype.setMag = function setMag(n) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41538,7 +41055,7 @@ p5.Vector.prototype.heading = function heading() {
  * @example
  * <div class="norender">
  * <code>
- * let v = createVector(10.0, 20.0);
+ * var v = createVector(10.0, 20.0);
  * // v has components [10.0, 20.0, 0.0]
  * v.rotate(HALF_PI);
  * // v's components are set to [-20.0, 9.999999, 0.0]
@@ -41547,12 +41064,12 @@ p5.Vector.prototype.heading = function heading() {
  *
  * <div>
  * <code>
- * let angle = 0;
+ * var angle = 0;
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(50, 50);
- *   let v1 = createVector(50, 0);
+ *   var v0 = createVector(50, 50);
+ *   var v1 = createVector(50, 0);
  *
  *   drawArrow(v0, v1.rotate(angle), 'black');
  *   angle += 0.01;
@@ -41567,7 +41084,7 @@ p5.Vector.prototype.heading = function heading() {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41592,10 +41109,10 @@ p5.Vector.prototype.rotate = function rotate(a) {
  * @example
  * <div class="norender">
  * <code>
- * let v1 = createVector(1, 0, 0);
- * let v2 = createVector(0, 1, 0);
+ * var v1 = createVector(1, 0, 0);
+ * var v2 = createVector(0, 1, 0);
  *
- * let angle = v1.angleBetween(v2);
+ * var angle = v1.angleBetween(v2);
  * // angle is PI/2
  * print(angle);
  * </code>
@@ -41605,15 +41122,15 @@ p5.Vector.prototype.rotate = function rotate(a) {
  * <code>
  * function draw() {
  *   background(240);
- *   let v0 = createVector(50, 50);
+ *   var v0 = createVector(50, 50);
  *
- *   let v1 = createVector(50, 0);
+ *   var v1 = createVector(50, 0);
  *   drawArrow(v0, v1, 'red');
  *
- *   let v2 = createVector(mouseX - 50, mouseY - 50);
+ *   var v2 = createVector(mouseX - 50, mouseY - 50);
  *   drawArrow(v0, v2, 'blue');
  *
- *   let angleBetween = v1.angleBetween(v2);
+ *   var angleBetween = v1.angleBetween(v2);
  *   noStroke();
  *   text(
  *     'angle between: ' +
@@ -41637,7 +41154,7 @@ p5.Vector.prototype.rotate = function rotate(a) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41672,7 +41189,7 @@ p5.Vector.prototype.angleBetween = function angleBetween(v) {
  * @example
  * <div class="norender">
  * <code>
- * let v = createVector(1, 1, 0);
+ * var v = createVector(1, 1, 0);
  *
  * v.lerp(3, 3, 0, 0.5); // v now has components [2,2,0]
  * </code>
@@ -41680,10 +41197,10 @@ p5.Vector.prototype.angleBetween = function angleBetween(v) {
  *
  * <div class="norender">
  * <code>
- * let v1 = createVector(0, 0, 0);
- * let v2 = createVector(100, 100, 0);
+ * var v1 = createVector(0, 0, 0);
+ * var v2 = createVector(100, 100, 0);
  *
- * let v3 = p5.Vector.lerp(v1, v2, 0.5);
+ * var v3 = p5.Vector.lerp(v1, v2, 0.5);
  * // v3 has components [50,50,0]
  * print(v3);
  * </code>
@@ -41691,24 +41208,24 @@ p5.Vector.prototype.angleBetween = function angleBetween(v) {
  *
  * <div>
  * <code>
- * let step = 0.01;
- * let amount = 0;
+ * var step = 0.01;
+ * var amount = 0;
  *
  * function draw() {
  *   background(240);
- *   let v0 = createVector(0, 0);
+ *   var v0 = createVector(0, 0);
  *
- *   let v1 = createVector(mouseX, mouseY);
+ *   var v1 = createVector(mouseX, mouseY);
  *   drawArrow(v0, v1, 'red');
  *
- *   let v2 = createVector(90, 90);
+ *   var v2 = createVector(90, 90);
  *   drawArrow(v0, v2, 'blue');
  *
  *   if (amount > 1 || amount < 0) {
  *     step *= -1;
  *   }
  *   amount += step;
- *   let v3 = p5.Vector.lerp(v1, v2, amount);
+ *   var v3 = p5.Vector.lerp(v1, v2, amount);
  *
  *   drawArrow(v0, v3, 'purple');
  * }
@@ -41722,7 +41239,7 @@ p5.Vector.prototype.angleBetween = function angleBetween(v) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41758,7 +41275,7 @@ p5.Vector.prototype.lerp = function lerp(x, y, z, amt) {
  * <div class = "norender">
  * <code>
  * function setup() {
- *   let v = createVector(20, 30);
+ *   var v = createVector(20, 30);
  *   print(v.array()); // Prints : Array [20, 30, 0]
  * }
  * </code>
@@ -41766,8 +41283,8 @@ p5.Vector.prototype.lerp = function lerp(x, y, z, amt) {
  *
  * <div class="norender">
  * <code>
- * let v = createVector(10.0, 20.0, 30.0);
- * let f = v.array();
+ * var v = createVector(10.0, 20.0, 30.0);
+ * var f = v.array();
  * print(f[0]); // Prints "10.0"
  * print(f[1]); // Prints "20.0"
  * print(f[2]); // Prints "30.0"
@@ -41789,9 +41306,9 @@ p5.Vector.prototype.array = function array() {
  * @example
  * <div class = "norender">
  * <code>
- * let v1 = createVector(5, 10, 20);
- * let v2 = createVector(5, 10, 20);
- * let v3 = createVector(13, 10, 19);
+ * var v1 = createVector(5, 10, 20);
+ * var v2 = createVector(5, 10, 20);
+ * var v3 = createVector(13, 10, 19);
  *
  * print(v1.equals(v2.x, v2.y, v2.z)); // true
  * print(v1.equals(v3.x, v3.y, v3.z)); // false
@@ -41800,9 +41317,9 @@ p5.Vector.prototype.array = function array() {
  *
  * <div class="norender">
  * <code>
- * let v1 = createVector(10.0, 20.0, 30.0);
- * let v2 = createVector(10.0, 20.0, 30.0);
- * let v3 = createVector(0.0, 0.0, 0.0);
+ * var v1 = createVector(10.0, 20.0, 30.0);
+ * var v2 = createVector(10.0, 20.0, 30.0);
+ * var v3 = createVector(0.0, 0.0, 0.0);
  * print(v1.equals(v2)); // true
  * print(v1.equals(v3)); // false
  * </code>
@@ -41850,21 +41367,21 @@ p5.Vector.prototype.equals = function equals(x, y, z) {
  *   // Create a variable, proportional to the mouseX,
  *   // varying from 0-360, to represent an angle in degrees.
  *   angleMode(DEGREES);
- *   let myDegrees = map(mouseX, 0, width, 0, 360);
+ *   var myDegrees = map(mouseX, 0, width, 0, 360);
  *
  *   // Display that variable in an onscreen text.
  *   // (Note the nfc() function to truncate additional decimal places,
  *   // and the "\xB0" character for the degree symbol.)
- *   let readout = 'angle = ' + nfc(myDegrees, 1) + '\xB0';
+ *   var readout = 'angle = ' + nfc(myDegrees, 1) + '\xB0';
  *   noStroke();
  *   fill(0);
  *   text(readout, 5, 15);
  *
  *   // Create a p5.Vector using the fromAngle function,
  *   // and extract its x and y components.
- *   let v = p5.Vector.fromAngle(radians(myDegrees), 30);
- *   let vx = v.x;
- *   let vy = v.y;
+ *   var v = p5.Vector.fromAngle(radians(myDegrees), 30);
+ *   var vx = v.x;
+ *   var vy = v.y;
  *
  *   push();
  *   translate(width / 2, height / 2);
@@ -41906,7 +41423,7 @@ p5.Vector.fromAngle = function fromAngle(angle, length) {
  * function draw() {
  *   background(255);
  *
- *   let t = millis() / 1000;
+ *   var t = millis() / 1000;
  *
  *   // add three point lights
  *   pointLight(color('#f00'), p5.Vector.fromAngles(t * 1.0, t * 1.3, 100));
@@ -41943,7 +41460,7 @@ p5.Vector.fromAngles = function(theta, phi, length) {
  * @example
  * <div class="norender">
  * <code>
- * let v = p5.Vector.random2D();
+ * var v = p5.Vector.random2D();
  * // May make v's attributes something like:
  * // [0.61554617, -0.51195765, 0.0] or
  * // [-0.4695841, -0.14366731, 0.0] or
@@ -41961,8 +41478,8 @@ p5.Vector.fromAngles = function(theta, phi, length) {
  * function draw() {
  *   background(240);
  *
- *   let v0 = createVector(50, 50);
- *   let v1 = p5.Vector.random2D();
+ *   var v0 = createVector(50, 50);
+ *   var v1 = p5.Vector.random2D();
  *   drawArrow(v0, v1.mult(50), 'black');
  * }
  *
@@ -41975,7 +41492,7 @@ p5.Vector.fromAngles = function(theta, phi, length) {
  *   translate(base.x, base.y);
  *   line(0, 0, vec.x, vec.y);
  *   rotate(vec.heading());
- *   let arrowSize = 7;
+ *   var arrowSize = 7;
  *   translate(vec.mag() - arrowSize, 0);
  *   triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
  *   pop();
@@ -41996,7 +41513,7 @@ p5.Vector.random2D = function random2D() {
  * @example
  * <div class="norender">
  * <code>
- * let v = p5.Vector.random3D();
+ * var v = p5.Vector.random3D();
  * // May make v's attributes something like:
  * // [0.61554617, -0.51195765, 0.599168] or
  * // [-0.4695841, -0.14366731, -0.8711202] or
@@ -42213,7 +41730,7 @@ p5.Vector.mag = function mag(vecT) {
 
 module.exports = p5.Vector;
 
-},{"../core/constants":17,"../core/main":23}],54:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24}],55:[function(_dereq_,module,exports){
 /**
  * @module Math
  * @submodule Random
@@ -42274,8 +41791,8 @@ var lcg = (function() {
  * <div>
  * <code>
  * randomSeed(99);
- * for (let i = 0; i < 100; i++) {
- *   let r = random(0, 255);
+ * for (var i = 0; i < 100; i++) {
+ *   var r = random(0, 255);
  *   stroke(r);
  *   line(i, 0, i, 100);
  * }
@@ -42316,8 +41833,8 @@ p5.prototype.randomSeed = function(seed) {
  * @example
  * <div>
  * <code>
- * for (let i = 0; i < 100; i++) {
- *   let r = random(50);
+ * for (var i = 0; i < 100; i++) {
+ *   var r = random(50);
  *   stroke(r * 5);
  *   line(50, i, 50 + r, i);
  * }
@@ -42325,8 +41842,8 @@ p5.prototype.randomSeed = function(seed) {
  * </div>
  * <div>
  * <code>
- * for (let i = 0; i < 100; i++) {
- *   let r = random(-50, 50);
+ * for (var i = 0; i < 100; i++) {
+ *   var r = random(-50, 50);
  *   line(50, i, 50 + r, i);
  * }
  * </code>
@@ -42334,8 +41851,8 @@ p5.prototype.randomSeed = function(seed) {
  * <div>
  * <code>
  * // Get a random element from an array using the random(Array) syntax
- * let words = ['apple', 'bear', 'cat', 'dog'];
- * let word = random(words); // select random word
+ * var words = ['apple', 'bear', 'cat', 'dog'];
+ * var word = random(words); // select random word
  * text(word, 10, 50); // draw the word
  * </code>
  * </div>
@@ -42400,19 +41917,19 @@ p5.prototype.random = function(min, max) {
  * @example
  * <div>
  * <code>
- * for (let y = 0; y < 100; y++) {
- *   let x = randomGaussian(50, 15);
+ * for (var y = 0; y < 100; y++) {
+ *   var x = randomGaussian(50, 15);
  *   line(50, y, x, y);
  * }
  * </code>
  * </div>
  * <div>
  * <code>
- * let distribution = new Array(360);
+ * var distribution = new Array(360);
  *
  * function setup() {
  *   createCanvas(100, 100);
- *   for (let i = 0; i < distribution.length; i++) {
+ *   for (var i = 0; i < distribution.length; i++) {
  *     distribution[i] = floor(randomGaussian(0, 15));
  *   }
  * }
@@ -42422,10 +41939,10 @@ p5.prototype.random = function(min, max) {
  *
  *   translate(width / 2, width / 2);
  *
- *   for (let i = 0; i < distribution.length; i++) {
+ *   for (var i = 0; i < distribution.length; i++) {
  *     rotate(TWO_PI / distribution.length);
  *     stroke(0);
- *     let dist = abs(distribution[i]);
+ *     var dist = abs(distribution[i]);
  *     line(0, 0, dist, 0);
  *   }
  * }
@@ -42459,7 +41976,7 @@ p5.prototype.randomGaussian = function(mean, sd) {
 
 module.exports = p5;
 
-},{"../core/main":23}],55:[function(_dereq_,module,exports){
+},{"../core/main":24}],56:[function(_dereq_,module,exports){
 /**
  * @module Math
  * @submodule Trigonometry
@@ -42491,9 +42008,9 @@ p5.prototype._angleMode = constants.RADIANS;
  * @example
  * <div class= “norender">
  * <code>
- * let a = PI;
- * let c = cos(a);
- * let ac = acos(c);
+ * var a = PI;
+ * var c = cos(a);
+ * var ac = acos(c);
  * // Prints: "3.1415927 : -1.0 : 3.1415927"
  * print(a + ' : ' + c + ' : ' + ac);
  * </code>
@@ -42501,9 +42018,9 @@ p5.prototype._angleMode = constants.RADIANS;
  *
  * <div class= “norender">
  * <code>
- * let a = PI + PI / 4.0;
- * let c = cos(a);
- * let ac = acos(c);
+ * var a = PI + PI / 4.0;
+ * var c = cos(a);
+ * var ac = acos(c);
  * // Prints: "3.926991 : -0.70710665 : 2.3561943"
  * print(a + ' : ' + c + ' : ' + ac);
  * </code>
@@ -42525,9 +42042,9 @@ p5.prototype.acos = function(ratio) {
  * @example
  * <div class= “norender">
  * <code>
- * let a = PI + PI / 3;
- * let s = sin(a);
- * let as = asin(s);
+ * var a = PI + PI / 3;
+ * var s = sin(a);
+ * var as = asin(s);
  * // Prints: "1.0471976 : 0.86602545 : 1.0471976"
  * print(a + ' : ' + s + ' : ' + as);
  * </code>
@@ -42535,9 +42052,9 @@ p5.prototype.acos = function(ratio) {
  *
  * <div class= “norender">
  * <code>
- * let a = PI + PI / 3.0;
- * let s = sin(a);
- * let as = asin(s);
+ * var a = PI + PI / 3.0;
+ * var s = sin(a);
+ * var as = asin(s);
  * // Prints: "4.1887903 : -0.86602545 : -1.0471976"
  * print(a + ' : ' + s + ' : ' + as);
  * </code>
@@ -42560,9 +42077,9 @@ p5.prototype.asin = function(ratio) {
  * @example
  * <div class= “norender">
  * <code>
- * let a = PI + PI / 3;
- * let t = tan(a);
- * let at = atan(t);
+ * var a = PI + PI / 3;
+ * var t = tan(a);
+ * var at = atan(t);
  * // Prints: "1.0471976 : 1.7320509 : 1.0471976"
  * print(a + ' : ' + t + ' : ' + at);
  * </code>
@@ -42570,9 +42087,9 @@ p5.prototype.asin = function(ratio) {
  *
  * <div class= “norender">
  * <code>
- * let a = PI + PI / 3.0;
- * let t = tan(a);
- * let at = atan(t);
+ * var a = PI + PI / 3.0;
+ * var t = tan(a);
+ * var at = atan(t);
  * // Prints: "4.1887903 : 1.7320513 : 1.0471977"
  * print(a + ' : ' + t + ' : ' + at);
  * </code>
@@ -42604,7 +42121,7 @@ p5.prototype.atan = function(ratio) {
  * function draw() {
  *   background(204);
  *   translate(width / 2, height / 2);
- *   let a = atan2(mouseY - height / 2, mouseX - width / 2);
+ *   var a = atan2(mouseY - height / 2, mouseX - width / 2);
  *   rotate(a);
  *   rect(-30, -5, 60, 10);
  * }
@@ -42630,9 +42147,9 @@ p5.prototype.atan2 = function(y, x) {
  * @example
  * <div>
  * <code>
- * let a = 0.0;
- * let inc = TWO_PI / 25.0;
- * for (let i = 0; i < 25; i++) {
+ * var a = 0.0;
+ * var inc = TWO_PI / 25.0;
+ * for (var i = 0; i < 25; i++) {
  *   line(i * 4, 50, i * 4, 50 + cos(a) * 40.0);
  *   a = a + inc;
  * }
@@ -42658,9 +42175,9 @@ p5.prototype.cos = function(angle) {
  * @example
  * <div>
  * <code>
- * let a = 0.0;
- * let inc = TWO_PI / 25.0;
- * for (let i = 0; i < 25; i++) {
+ * var a = 0.0;
+ * var inc = TWO_PI / 25.0;
+ * for (var i = 0; i < 25; i++) {
  *   line(i * 4, 50, i * 4, 50 + sin(a) * 40.0);
  *   a = a + inc;
  * }
@@ -42686,9 +42203,9 @@ p5.prototype.sin = function(angle) {
  * @example
  * <div>
  * <code>
- * let a = 0.0;
- * let inc = TWO_PI / 50.0;
- * for (let i = 0; i < 100; i = i + 2) {
+ * var a = 0.0;
+ * var inc = TWO_PI / 50.0;
+ * for (var i = 0; i < 100; i = i + 2) {
  *   line(i, 50, i, 50 + tan(a) * 2.0);
  *   a = a + inc;
  * }
@@ -42718,8 +42235,8 @@ p5.prototype.tan = function(angle) {
  * @example
  * <div class= “norender">
  * <code>
- * let rad = PI / 4;
- * let deg = degrees(rad);
+ * var rad = PI / 4;
+ * var deg = degrees(rad);
  * print(rad + ' radians is ' + deg + ' degrees');
  * // Prints: 0.7853981633974483 radians is 45 degrees
  * </code>
@@ -42744,8 +42261,8 @@ p5.prototype.degrees = function(angle) {
  * @example
  * <div class= “norender">
  * <code>
- * let deg = 45.0;
- * let rad = radians(deg);
+ * var deg = 45.0;
+ * var rad = radians(deg);
  * print(deg + ' degrees is ' + rad + ' radians');
  * // Prints: 45 degrees is 0.7853981633974483 radians
  * </code>
@@ -42767,14 +42284,14 @@ p5.prototype.radians = function(angle) {
  * function draw() {
  *   background(204);
  *   angleMode(DEGREES); // Change the mode to DEGREES
- *   let a = atan2(mouseY - height / 2, mouseX - width / 2);
+ *   var a = atan2(mouseY - height / 2, mouseX - width / 2);
  *   translate(width / 2, height / 2);
  *   push();
  *   rotate(a);
  *   rect(-20, -5, 40, 10); // Larger rectangle is rotating in degrees
  *   pop();
  *   angleMode(RADIANS); // Change the mode to RADIANS
- *   rotate(a); // variable a stays the same
+ *   rotate(a); // var a stays the same
  *   rect(-40, -5, 20, 10); // Smaller rectangle is rotating in radians
  * }
  * </code>
@@ -42838,7 +42355,7 @@ p5.prototype._fromRadians = function(angle) {
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/main":23}],56:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24}],57:[function(_dereq_,module,exports){
 /**
  * @module Typography
  * @submodule Attributes
@@ -42934,7 +42451,7 @@ p5.prototype.textAlign = function(horizAlign, vertAlign) {
  * <div>
  * <code>
  * // Text to display. The "\n" is a "new line" character
- * let lines = 'L1\nL2\nL3';
+ * var lines = 'L1\nL2\nL3';
  * textSize(12);
  *
  * textLeading(10); // Set leading to 10
@@ -42993,13 +42510,13 @@ p5.prototype.textSize = function(theSize) {
 };
 
 /**
- * Sets/gets the style of the text for system fonts to NORMAL, ITALIC, BOLD or BOLDITALIC.
+ * Sets/gets the style of the text for system fonts to NORMAL, ITALIC, or BOLD.
  * Note: this may be is overridden by CSS styling. For non-system fonts
  * (opentype, truetype, etc.) please load styled fonts instead.
  *
  * @method textStyle
  * @param {Constant} theStyle styling for text, either NORMAL,
- *                            ITALIC, BOLD or BOLDITALIC
+ *                            ITALIC, or BOLD
  * @chainable
  * @example
  * <div>
@@ -43007,18 +42524,16 @@ p5.prototype.textSize = function(theSize) {
  * strokeWeight(0);
  * textSize(12);
  * textStyle(NORMAL);
- * text('Font Style Normal', 10, 15);
+ * text('Font Style Normal', 10, 30);
  * textStyle(ITALIC);
- * text('Font Style Italic', 10, 40);
+ * text('Font Style Italic', 10, 60);
  * textStyle(BOLD);
- * text('Font Style Bold', 10, 65);
- * textStyle(BOLDITALIC);
- * text('Font Style Bold Italic', 10, 90);
+ * text('Font Style Bold', 10, 90);
  * </code>
  * </div>
  *
  * @alt
- *words Font Style Normal displayed normally, Italic in italic, bold in bold and bold italic in bold italics.
+ *words Font Style Normal displayed normally, Italic in italic and bold in bold
  */
 /**
  * @method textStyle
@@ -43040,13 +42555,13 @@ p5.prototype.textStyle = function(theStyle) {
  * <code>
  * textSize(28);
  *
- * let aChar = 'P';
- * let cWidth = textWidth(aChar);
+ * var aChar = 'P';
+ * var cWidth = textWidth(aChar);
  * text(aChar, 0, 40);
  * line(cWidth, 0, cWidth, 50);
  *
- * let aString = 'p5.js';
- * let sWidth = textWidth(aString);
+ * var aString = 'p5.js';
+ * var sWidth = textWidth(aString);
  * text(aString, 0, 85);
  * line(sWidth, 50, sWidth, 100);
  * </code>
@@ -43073,11 +42588,11 @@ p5.prototype.textWidth = function(theText) {
  * @example
  * <div>
  * <code>
- * let base = height * 0.75;
- * let scalar = 0.8; // Different for each font
+ * var base = height * 0.75;
+ * var scalar = 0.8; // Different for each font
  *
  * textSize(32); // Set initial text size
- * let asc = textAscent() * scalar; // Calc ascent
+ * var asc = textAscent() * scalar; // Calc ascent
  * line(0, base - asc, width, base - asc);
  * text('dp', 0, base); // Draw text on baseline
  *
@@ -43102,11 +42617,11 @@ p5.prototype.textAscent = function() {
  * @example
  * <div>
  * <code>
- * let base = height * 0.75;
- * let scalar = 0.8; // Different for each font
+ * var base = height * 0.75;
+ * var scalar = 0.8; // Different for each font
  *
  * textSize(32); // Set initial text size
- * let desc = textDescent() * scalar; // Calc ascent
+ * var desc = textDescent() * scalar; // Calc ascent
  * line(0, base + desc, width, base + desc);
  * text('dp', 0, base); // Draw text on baseline
  *
@@ -43131,7 +42646,7 @@ p5.prototype._updateTextMetrics = function() {
 
 module.exports = p5;
 
-},{"../core/main":23}],57:[function(_dereq_,module,exports){
+},{"../core/main":24}],58:[function(_dereq_,module,exports){
 /**
  * @module Typography
  * @submodule Loading & Displaying
@@ -43154,7 +42669,7 @@ _dereq_('../core/error_helpers');
  * is executed.
  * <br><br>
  * The path to the font should be relative to the HTML file
- * that links in your sketch. Loading fonts from a URL or other
+ * that links in your sketch. Loading an from a URL or other
  * remote location may be blocked due to your browser's built-in
  * security.
  *
@@ -43171,7 +42686,7 @@ _dereq_('../core/error_helpers');
  * operation will have completed before <a href="#/p5/setup">setup()</a> and <a href="#/p5/draw">draw()</a> are called.</p>
  *
  * <div><code>
- * let myFont;
+ * var myFont;
  * function preload() {
  *   myFont = loadFont('assets/AvenirNextLTPro-Demi.otf');
  * }
@@ -43199,7 +42714,7 @@ _dereq_('../core/error_helpers');
  * }
  * </code></div>
  *
- * <p>You can also use the font filename string (without the file extension) to style other HTML
+ * <p>You can also use the string name of the font to style other HTML
  * elements.</p>
  *
  * <div><code>
@@ -43208,7 +42723,7 @@ _dereq_('../core/error_helpers');
  * }
  *
  * function setup() {
- *   let myDiv = createDiv('hello there');
+ *   var myDiv = createDiv('hello there');
  *   myDiv.style('font-family', 'Avenir');
  * }
  * </code></div>
@@ -43225,10 +42740,10 @@ p5.prototype.loadFont = function(path, onSuccess, onError) {
   var self = this;
   opentype.load(path, function(err, font) {
     if (err) {
-      p5._friendlyFileLoadError(4, path);
       if (typeof onError !== 'undefined') {
         return onError(err);
       }
+      p5._friendlyFileLoadError(4, path);
       console.error(err, path);
       return;
     }
@@ -43320,7 +42835,7 @@ p5.prototype.loadFont = function(path, onSuccess, onError) {
  * </div>
  * <div>
  * <code>
- * let s = 'The quick brown fox jumped over the lazy dog.';
+ * var s = 'The quick brown fox jumped over the lazy dog.';
  * fill(50);
  * text(s, 10, 10, 70, 80); // Text wraps within text box
  * </code>
@@ -43328,7 +42843,7 @@ p5.prototype.loadFont = function(path, onSuccess, onError) {
  *
  * <div modernizr='webgl'>
  * <code>
- * let avenir;
+ * var avenir;
  * function preload() {
  *   avenir = loadFont('assets/Avenir.otf');
  * }
@@ -43340,7 +42855,7 @@ p5.prototype.loadFont = function(path, onSuccess, onError) {
  * }
  * function draw() {
  *   background(0);
- *   let time = millis();
+ *   var time = millis();
  *   rotateX(time / 1000);
  *   rotateZ(time / 1234);
  *   text('p5.js', 0, 0);
@@ -43382,7 +42897,7 @@ p5.prototype.text = function(str, x, y, maxWidth, maxHeight) {
  * </div>
  * <div>
  * <code>
- * let fontRegular, fontItalic, fontBold;
+ * var fontRegular, fontItalic, fontBold;
  * function preload() {
  *   fontRegular = loadFont('assets/Regular.otf');
  *   fontItalic = loadFont('assets/Italic.ttf');
@@ -43439,7 +42954,7 @@ p5.prototype.textFont = function(theFont, theSize) {
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/error_helpers":19,"../core/main":23,"opentype.js":9}],58:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/error_helpers":20,"../core/main":24,"opentype.js":10}],59:[function(_dereq_,module,exports){
 /**
  * This module defines the <a href="#/p5.Font">p5.Font</a> class and functions for
  * drawing text to the display canvas.
@@ -43453,6 +42968,12 @@ module.exports = p5;
 
 var p5 = _dereq_('../core/main');
 var constants = _dereq_('../core/constants');
+
+/*
+ * TODO:
+ * -- kerning
+ * -- alignment: justified?
+ */
 
 /**
  * Base class for font handling
@@ -43471,6 +42992,11 @@ p5.Font = function(p) {
   this.font = undefined;
 };
 
+p5.Font.prototype.list = function() {
+  // TODO
+  throw new Error('not yet implemented');
+};
+
 /**
  * Returns a tight bounding box for the given text string using this
  * font (currently only supports single lines)
@@ -43479,26 +43005,23 @@ p5.Font = function(p) {
  * @param  {String} line     a line of text
  * @param  {Number} x        x-position
  * @param  {Number} y        y-position
- * @param  {Number} [fontSize] font size to use (optional) Default is 12.
+ * @param  {Number} [fontSize] font size to use (optional)
  * @param  {Object} [options] opentype options (optional)
- *                            opentype fonts contains alignment and baseline options.
- *                            Default is 'LEFT' and 'alphabetic'
- *
  *
  * @return {Object}          a rectangle object with properties: x, y, w, h
  *
  * @example
  * <div>
  * <code>
- * let font;
- * let textString = 'Lorem ipsum dolor sit amet.';
+ * var font;
+ * var textString = 'Lorem ipsum dolor sit amet.';
  * function preload() {
  *   font = loadFont('./assets/Regular.otf');
  * }
  * function setup() {
  *   background(210);
  *
- *   let bbox = font.textBounds(textString, 10, 30, 12);
+ *   var bbox = font.textBounds(textString, 10, 30, 12);
  *   fill(255);
  *   stroke(0);
  *   rect(bbox.x, bbox.y, bbox.w, bbox.h);
@@ -43516,28 +43039,21 @@ p5.Font = function(p) {
  *words Lorem ipsum dol go off canvas and contained by white bounding box
  *
  */
-p5.Font.prototype.textBounds = function(str, x, y, fontSize, opts) {
+p5.Font.prototype.textBounds = function(str, x, y, fontSize, options) {
   x = x !== undefined ? x : 0;
   y = y !== undefined ? y : 0;
+  fontSize = fontSize || this.parent._renderer._textSize;
 
   // Check cache for existing bounds. Take into consideration the text alignment
   // settings. Default alignment should match opentype's origin: left-aligned &
   // alphabetic baseline.
-  var p = (opts && opts.renderer && opts.renderer._pInst) || this.parent,
-    ctx = p._renderer.drawingContext,
-    alignment = ctx.textAlign || constants.LEFT,
-    baseline = ctx.textBaseline || constants.BASELINE,
-    cacheResults = false,
-    result,
-    key;
-
-  fontSize = fontSize || p._renderer._textSize;
-
-  // NOTE: cache disabled for now pending further discussion of #3436
-  if (cacheResults) {
-    key = cacheKey('textBounds', str, x, y, fontSize, alignment, baseline);
+  var p =
+      (options && options.renderer && options.renderer._pInst) || this.parent,
+    renderer = p._renderer,
+    alignment = renderer._textAlign || constants.LEFT,
+    baseline = renderer._textBaseline || constants.BASELINE,
+    key = cacheKey('textBounds', str, x, y, fontSize, alignment, baseline),
     result = this.cache[key];
-  }
 
   if (!result) {
     var minX,
@@ -43549,7 +43065,7 @@ p5.Font.prototype.textBounds = function(str, x, y, fontSize, opts) {
       yCoords = [],
       scale = this._scale(fontSize);
 
-    this.font.forEachGlyph(str, x, y, fontSize, opts, function(
+    this.font.forEachGlyph(str, x, y, fontSize, options, function(
       glyph,
       gX,
       gY,
@@ -43577,7 +43093,7 @@ p5.Font.prototype.textBounds = function(str, x, y, fontSize, opts) {
 
     // Bounds are now calculated, so shift the x & y to match alignment settings
     pos = this._handleAlignment(
-      p._renderer,
+      renderer,
       str,
       result.x,
       result.y,
@@ -43587,9 +43103,9 @@ p5.Font.prototype.textBounds = function(str, x, y, fontSize, opts) {
     result.x = pos.x;
     result.y = pos.y;
 
-    if (cacheResults) {
-      this.cache[key] = result;
-    }
+    this.cache[
+      cacheKey('textBounds', str, x, y, fontSize, alignment, baseline)
+    ] = result;
   }
 
   return result;
@@ -43617,13 +43133,13 @@ p5.Font.prototype.textBounds = function(str, x, y, fontSize, opts) {
  * @example
  * <div>
  * <code>
- * let font;
+ * var font;
  * function preload() {
  *   font = loadFont('./assets/Avenir.otf');
  * }
  *
- * let points;
- * let bounds;
+ * var points;
+ * var bounds;
  * function setup() {
  *   createCanvas(100, 100);
  *   stroke(0);
@@ -43640,8 +43156,8 @@ p5.Font.prototype.textBounds = function(str, x, y, fontSize, opts) {
  *   background(255);
  *   beginShape();
  *   translate(-bounds.x * width / bounds.w, -bounds.y * height / bounds.h);
- *   for (let i = 0; i < points.length; i++) {
- *     let p = points[i];
+ *   for (var i = 0; i < points.length; i++) {
+ *     var p = points[i];
  *     vertex(
  *       p.x * width / bounds.w +
  *         sin(20 * p.y / bounds.h + millis() / 1000) * width / 30,
@@ -43932,7 +43448,8 @@ function pathToPoints(cmds, options) {
   }
 
   if (opts.simplifyThreshold) {
-    simplify(pts, opts.simplifyThreshold);
+    /*var count = */ simplify(pts, opts.simplifyThreshold);
+    //console.log('Simplify: removed ' + count + ' pts');
   }
 
   return pts;
@@ -44675,14 +44192,15 @@ function base3(t, p1, p2, p3, p4) {
 function cacheKey() {
   var hash = '';
   for (var i = arguments.length - 1; i >= 0; --i) {
-    hash += '？' + arguments[i];
+    var v = arguments[i];
+    hash += v === Object(v) ? JSON.stringify(v) : v;
   }
   return hash;
 }
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/main":23}],59:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24}],60:[function(_dereq_,module,exports){
 /**
  * @module Data
  * @submodule Array Functions
@@ -44879,6 +44397,7 @@ p5.prototype.shorten = function(list) {
  * Fisher-Yates Shuffle Algorithm</a>.
  *
  * @method shuffle
+ * @deprecated See <a href="https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array">shuffling an array with JS</a> instead.
  * @param  {Array}   array  Array to shuffle
  * @param  {Boolean} [bool] modify passed array
  * @return {Array}   shuffled Array
@@ -45036,7 +44555,7 @@ p5.prototype.subset = function(list, start, count) {
 
 module.exports = p5;
 
-},{"../core/main":23}],60:[function(_dereq_,module,exports){
+},{"../core/main":24}],61:[function(_dereq_,module,exports){
 /**
  * @module Data
  * @submodule Conversion
@@ -45353,7 +44872,7 @@ p5.prototype.unhex = function(n) {
 
 module.exports = p5;
 
-},{"../core/main":23}],61:[function(_dereq_,module,exports){
+},{"../core/main":24}],62:[function(_dereq_,module,exports){
 /**
  * @module Data
  * @submodule String Functions
@@ -45490,11 +45009,6 @@ p5.prototype.matchAll = function(str, reg) {
  * versions: one for formatting floats, and one for formatting ints.
  * The values for the digits, left, and right parameters should always
  * be positive integers.
- * (NOTE): Be cautious when using left and right parameters as it prepends numbers of 0's if the parameter
- * if greater than the current length of the number.
- * For example if number is 123.2 and left parameter passed is 4 which is greater than length of 123
- * (integer part) i.e 3 than result will be 0123.2. Same case for right parameter i.e. if right is 3 than
- * the result will be 123.200.
  *
  * @method nf
  * @param {Number|String}       num      the Number to format
@@ -45507,31 +45021,30 @@ p5.prototype.matchAll = function(str, reg) {
  * @example
  * <div>
  * <code>
- * var myFont;
- * function preload() {
- *   myFont = loadFont('assets/fonts/inconsolata.ttf');
- * }
  * function setup() {
  *   background(200);
- *   var num1 = 321;
- *   var num2 = -1321;
+ *   var num = 112.53106115;
  *
  *   noStroke();
  *   fill(0);
- *   textFont(myFont);
- *   textSize(22);
+ *   textSize(14);
+ *   // Draw formatted numbers
+ *   text(nf(num, 5, 2), 10, 20);
  *
- *   text(nf(num1, 4, 2), 10, 30);
- *   text(nf(num2, 4, 2), 10, 80);
- *   // Draw dividing line
+ *   text(nf(num, 4, 3), 10, 55);
+ *
+ *   text(nf(num, 3, 6), 10, 85);
+ *
+ *   // Draw dividing lines
  *   stroke(120);
- *   line(0, 50, width, 50);
+ *   line(0, 30, width, 30);
+ *   line(0, 65, width, 65);
  * }
  * </code>
  * </div>
  *
  * @alt
- * "0321.00" middle top, -1321.00" middle bottom canvas
+ * "0011253" top left, "0112.531" mid left, "112.531061" bottom left canvas
  */
 /**
  * @method nf
@@ -45736,18 +45249,10 @@ function addNfp(num) {
 
 /**
  * Utility function for formatting numbers into strings. Similar to <a href="#/p5/nf">nf()</a> but
- * puts an additional "_" (space) in front of positive numbers just in case to align it with negative
- * numbers which includes "-" (minus) sign.
- * The main usecase of nfs() can be seen when one wants to align the digits (place values) of a positive
- * number with some negative number (See the example to get a clear picture).
- * There are two versions: one for formatting float, and one for formatting int.
- * The values for the digits, left, and right parameters should always be positive integers.
- * (IMP): The result on the canvas basically the expected alignment can vary based on the typeface you are using.
- * (NOTE): Be cautious when using left and right parameters as it prepends numbers of 0's if the parameter
- * if greater than the current length of the number.
- * For example if number is 123.2 and left parameter passed is 4 which is greater than length of 123
- * (integer part) i.e 3 than result will be 0123.2. Same case for right parameter i.e. if right is 3 than
- * the result will be 123.200.
+ * puts a " " (space) in front of positive numbers and a "-" in front of
+ * negative numbers. There are two versions: one for formatting floats, and
+ * one for formatting ints. The values for the digits, left, and right
+ * parameters should always be positive integers.
  *
  * @method nfs
  * @param {Number}       num      the Number to format
@@ -45760,27 +45265,19 @@ function addNfp(num) {
  * @example
  * <div>
  * <code>
- * var myFont;
- * function preload() {
- *   myFont = loadFont('assets/fonts/inconsolata.ttf');
- * }
  * function setup() {
  *   background(200);
- *   var num1 = 321;
- *   var num2 = -1321;
+ *   var num1 = 11253106.115;
+ *   var num2 = -11253106.115;
  *
  *   noStroke();
  *   fill(0);
- *   textFont(myFont);
- *   textSize(22);
- *
- *   // nfs() aligns num1 (positive number) with num2 (negative number) by
- *   // adding a blank space in front of the num1 (positive number)
- *   // [left = 4] in num1 add one 0 in front, to align the digits with num2
- *   // [right = 2] in num1 and num2 adds two 0's after both numbers
- *   // To see the differences check the example of nf() too.
+ *   textSize(12);
+ *   // Draw formatted numbers
  *   text(nfs(num1, 4, 2), 10, 30);
+ *
  *   text(nfs(num2, 4, 2), 10, 80);
+ *
  *   // Draw dividing line
  *   stroke(120);
  *   line(0, 50, width, 50);
@@ -45789,7 +45286,7 @@ function addNfp(num) {
  * </div>
  *
  * @alt
- * "0321.00" top middle and "-1321.00" displayed bottom middle
+ * "11253106.11" top middle and "-11253106.11" displayed bottom middle
  */
 /**
  * @method nfs
@@ -45937,7 +45434,7 @@ p5.prototype.trim = function(str) {
 
 module.exports = p5;
 
-},{"../core/error_helpers":19,"../core/main":23}],62:[function(_dereq_,module,exports){
+},{"../core/error_helpers":20,"../core/main":24}],63:[function(_dereq_,module,exports){
 /**
  * @module IO
  * @submodule Time & Date
@@ -46106,7 +45603,7 @@ p5.prototype.year = function() {
 
 module.exports = p5;
 
-},{"../core/main":23}],63:[function(_dereq_,module,exports){
+},{"../core/main":24}],64:[function(_dereq_,module,exports){
 /**
  * @module Shape
  * @submodule 3D Primitives
@@ -47657,7 +47154,7 @@ p5.RendererGL.prototype.curveVertex = function() {
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/main":23,"./p5.Geometry":69}],64:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24,"./p5.Geometry":70}],65:[function(_dereq_,module,exports){
 /**
  * @module Lights, Camera
  * @submodule Interaction
@@ -47964,13 +47461,13 @@ p5.prototype.orbitControl = function(sensitivityX, sensitivityY) {
  * @method debugMode
  * @param {Number} [gridSize]
  * @param {Number} [gridDivisions]
- * @param {Number} [gridXOff]
- * @param {Number} [gridYOff]
- * @param {Number} [gridZOff]
+ * @param {Number} [xOff]
+ * @param {Number} [yOff]
+ * @param {Number} [zOff]
  * @param {Number} [axesSize]
- * @param {Number} [axesXOff]
- * @param {Number} [axesYOff]
- * @param {Number} [axesZOff]
+ * @param {Number} [xOff]
+ * @param {Number} [yOff]
+ * @param {Number} [zOff]
  */
 
 p5.prototype.debugMode = function() {
@@ -48228,7 +47725,7 @@ p5.prototype._axesIcon = function(size, xOff, yOff, zOff) {
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/main":23}],65:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24}],66:[function(_dereq_,module,exports){
 /**
  * @module Lights, Camera
  * @submodule Lights
@@ -48347,8 +47844,8 @@ p5.prototype.ambientLight = function(v1, v2, v3, a) {
  * function draw() {
  *   background(0);
  *   //move your mouse to change light direction
- *   let dirX = (mouseX / width - 0.5) * 2;
- *   let dirY = (mouseY / height - 0.5) * 2;
+ *   var dirX = (mouseX / width - 0.5) * 2;
+ *   var dirY = (mouseY / height - 0.5) * 2;
  *   directionalLight(250, 250, 250, -dirX, -dirY, 0.25);
  *   ambientMaterial(250);
  *   noStroke();
@@ -48460,8 +47957,8 @@ p5.prototype.directionalLight = function(v1, v2, v3, x, y, z) {
  * function draw() {
  *   background(0);
  *   //move your mouse to change light position
- *   let locX = mouseX - width / 2;
- *   let locY = mouseY - height / 2;
+ *   var locX = mouseX - width / 2;
+ *   var locY = mouseY - height / 2;
  *   // to set the light position,
  *   // think of the world's coordinate as:
  *   // -width/2,-height/2 -------- width/2,-height/2
@@ -48555,7 +48052,7 @@ p5.prototype.pointLight = function(v1, v2, v3, x, y, z) {
 
 module.exports = p5;
 
-},{"../core/main":23}],66:[function(_dereq_,module,exports){
+},{"../core/main":24}],67:[function(_dereq_,module,exports){
 /**
  * @module Shape
  * @submodule 3D Models
@@ -48594,7 +48091,7 @@ _dereq_('./p5.Geometry');
  * <div>
  * <code>
  * //draw a spinning octahedron
- * let octahedron;
+ * var octahedron;
  *
  * function preload() {
  *   octahedron = loadModel('assets/octahedron.obj');
@@ -48620,7 +48117,7 @@ _dereq_('./p5.Geometry');
  * <div>
  * <code>
  * //draw a spinning teapot
- * let teapot;
+ * var teapot;
  *
  * function preload() {
  *   // Load model with normalise parameter set to true
@@ -48808,7 +48305,7 @@ function parseObj(model, lines) {
  * <div>
  * <code>
  * //draw a spinning octahedron
- * let octahedron;
+ * var octahedron;
  *
  * function preload() {
  *   octahedron = loadModel('assets/octahedron.obj');
@@ -48846,7 +48343,7 @@ p5.prototype.model = function(model) {
 
 module.exports = p5;
 
-},{"../core/main":23,"./p5.Geometry":69}],67:[function(_dereq_,module,exports){
+},{"../core/main":24,"./p5.Geometry":70}],68:[function(_dereq_,module,exports){
 /**
  * @module Lights, Camera
  * @submodule Material
@@ -48880,7 +48377,7 @@ _dereq_('./p5.Texture');
  * @example
  * <div modernizr='webgl'>
  * <code>
- * let mandel;
+ * var mandel;
  * function preload() {
  *   // load the shader definitions from files
  *   mandel = loadShader('assets/shader.vert', 'assets/shader.frag');
@@ -48940,16 +48437,16 @@ p5.prototype.loadShader = function(vertFilename, fragFilename) {
  * <div modernizr='webgl'>
  * <code>
  * // the 'varying's are shared between both vertex & fragment shaders
- * let varying = 'precision highp float; varying vec2 vPos;';
+ * var varying = 'precision highp float; varying vec2 vPos;';
  *
  * // the vertex shader is called for each vertex
- * let vs =
+ * var vs =
  *   varying +
  *   'attribute vec3 aPosition;' +
  *   'void main() { vPos = (gl_Position = vec4(aPosition,1.0)).xy; }';
  *
  * // the fragment shader is called for each pixel
- * let fs =
+ * var fs =
  *   varying +
  *   'uniform vec2 p;' +
  *   'uniform float r;' +
@@ -48967,7 +48464,7 @@ p5.prototype.loadShader = function(vertFilename, fragFilename) {
  *   '  gl_FragColor = vec4(0.5-cos(n*17.0)/2.0,0.5-cos(n*13.0)/2.0,0.5-cos(n*23.0)/2.0,1.0);' +
  *   '}';
  *
- * let mandel;
+ * var mandel;
  * function setup() {
  *   createCanvas(100, 100, WEBGL);
  *
@@ -49067,7 +48564,7 @@ p5.prototype.normalMaterial = function() {
  * @example
  * <div>
  * <code>
- * let img;
+ * var img;
  * function preload() {
  *   img = loadImage('assets/laDefense.jpg');
  * }
@@ -49090,7 +48587,7 @@ p5.prototype.normalMaterial = function() {
  *
  * <div>
  * <code>
- * let pg;
+ * var pg;
  * function setup() {
  *   createCanvas(100, 100, WEBGL);
  *   pg = createGraphics(200, 200);
@@ -49110,7 +48607,7 @@ p5.prototype.normalMaterial = function() {
  *
  * <div>
  * <code>
- * let vid;
+ * var vid;
  * function preload() {
  *   vid = createVideo('assets/fingers.mov');
  *   vid.hide();
@@ -49139,92 +48636,12 @@ p5.prototype.texture = function(tex) {
   this._assert3d('texture');
   p5._validateParameters('texture', arguments);
   this._renderer.drawMode = constants.TEXTURE;
-  this._renderer.textureImage = tex;
   var shader = this._renderer._useLightShader();
   shader.setUniform('uSpecular', false);
   shader.setUniform('isTexture', true);
   shader.setUniform('uSampler', tex);
   this.noStroke();
   return this;
-};
-
-/**
- * Sets the coordinate space for texture mapping. The default mode is IMAGE
- * which refers to the actual coordinates of the image.
- * NORMAL refers to a normalized space of values ranging from 0 to 1.
- * This function only works in WEBGL mode.
- *
- * With IMAGE, if an image is 100 x 200 pixels, mapping the image onto the entire
- * size of a quad would require the points (0,0) (100, 0) (100,200) (0,200).
- * The same mapping in NORMAL is (0,0) (1,0) (1,1) (0,1).
- * @method  textureMode
- * @param {Constant} mode either IMAGE or NORMAL
- * @example
- * <div>
- * <code>
- * let img;
- *
- * function preload() {
- *   img = loadImage('assets/laDefense.jpg');
- * }
- *
- * function setup() {
- *   createCanvas(100, 100, WEBGL);
- * }
- *
- * function draw() {
- *   texture(img);
- *   textureMode(NORMAL);
- *   beginShape();
- *   vertex(-50, -50, 0, 0);
- *   vertex(50, -50, 1, 0);
- *   vertex(50, 50, 1, 1);
- *   vertex(-50, 50, 0, 1);
- *   endShape();
- * }
- * </code>
- * </div>
- *
- * @alt
- * the underside of a white umbrella and gridded ceiling above
- *
- * <div>
- * <code>
- * let img;
- *
- * function preload() {
- *   img = loadImage('assets/laDefense.jpg');
- * }
- *
- * function setup() {
- *   createCanvas(100, 100, WEBGL);
- * }
- *
- * function draw() {
- *   texture(img);
- *   textureMode(NORMAL);
- *   beginShape();
- *   vertex(-50, -50, 0, 0);
- *   vertex(50, -50, img.width, 0);
- *   vertex(50, 50, img.width, img.height);
- *   vertex(-50, 50, 0, img.height);
- *   endShape();
- * }
- * </code>
- * </div>
- *
- * @alt
- * the underside of a white umbrella and gridded ceiling above
- *
- */
-p5.prototype.textureMode = function(mode) {
-  if (mode !== constants.IMAGE && mode !== constants.NORMAL) {
-    console.warn(
-      'You tried to set ' + mode + ' textureMode only supports IMAGE & NORMAL '
-    );
-  } else {
-    this._renderer.textureMode = mode;
-  }
 };
 
 /**
@@ -49350,7 +48767,7 @@ p5.RendererGL.prototype._applyColorBlend = function(colors) {
 
 module.exports = p5;
 
-},{"../core/constants":17,"../core/main":23,"./p5.Texture":75}],68:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24,"./p5.Texture":76}],69:[function(_dereq_,module,exports){
 /**
  * @module Lights, Camera
  * @submodule Camera
@@ -49590,8 +49007,8 @@ p5.prototype.createCamera = function() {
  * @example
  * <div>
  * <code>
- * let cam;
- * let delta = 0.01;
+ * var cam;
+ * var delta = 0.01;
  *
  * function setup() {
  *   createCanvas(100, 100, WEBGL);
@@ -49690,6 +49107,7 @@ p5.Camera.prototype.perspective = function(fovy, aspect, near, far) {
     );
   }
 
+  this.cameraFOV = this._renderer._pInst._toRadians(fovy);
   this.aspectRatio = aspect;
   this.cameraNear = near;
   this.cameraFar = far;
@@ -49845,8 +49263,8 @@ p5.Camera.prototype._rotateView = function(a, x, y, z) {
  * @example
  * <div>
  * <code>
- * let cam;
- * let delta = 0.01;
+ * var cam;
+ * var delta = 0.01;
  *
  * function setup() {
  *   createCanvas(100, 100, WEBGL);
@@ -49904,8 +49322,8 @@ p5.Camera.prototype.pan = function(amount) {
  * @example
  * <div>
  * <code>
- * let cam;
- * let delta = 0.01;
+ * var cam;
+ * var delta = 0.01;
  *
  * function setup() {
  *   createCanvas(100, 100, WEBGL);
@@ -49963,7 +49381,7 @@ p5.Camera.prototype.tilt = function(amount) {
  * @example
  * <div>
  * <code>
- * let cam;
+ * var cam;
  *
  * function setup() {
  *   createCanvas(100, 100, WEBGL);
@@ -50111,8 +49529,8 @@ p5.Camera.prototype.camera = function(
  * <div>
  * <code>
  * // see the camera move along its own axes while maintaining its orientation
- * let cam;
- * let delta = 0.5;
+ * var cam;
+ * var delta = 0.5;
  *
  * function setup() {
  *   createCanvas(100, 100, WEBGL);
@@ -50185,7 +49603,7 @@ p5.Camera.prototype.move = function(x, y, z) {
  * <code>
  * // press '1' '2' or '3' keys to set camera position
  *
- * let cam;
+ * var cam;
  *
  * function setup() {
  *   createCanvas(100, 100, WEBGL);
@@ -50447,8 +49865,8 @@ p5.Camera.prototype._isActive = function() {
  * @example
  * <div>
  * <code>
- * let cam1, cam2;
- * let currentCamera;
+ * var cam1, cam2;
+ * var currentCamera;
  *
  * function setup() {
  *   createCanvas(100, 100, WEBGL);
@@ -50535,7 +49953,7 @@ p5.prototype.setCamera = function(cam) {
 
 module.exports = p5.Camera;
 
-},{"../core/main":23}],69:[function(_dereq_,module,exports){
+},{"../core/main":24}],70:[function(_dereq_,module,exports){
 //some of the functions are adjusted from Three.js(http://threejs.org)
 
 'use strict';
@@ -50815,7 +50233,7 @@ p5.Geometry.prototype.normalize = function() {
 
 module.exports = p5.Geometry;
 
-},{"../core/main":23}],70:[function(_dereq_,module,exports){
+},{"../core/main":24}],71:[function(_dereq_,module,exports){
 /**
  * @requires constants
  * @todo see methods below needing further implementation.
@@ -51329,6 +50747,8 @@ p5.Matrix.prototype.scale = function(x, y, z) {
  * inspired by Toji's gl-matrix lib, mat4 rotation
  */
 p5.Matrix.prototype.rotate = function(a, x, y, z) {
+  var _a = this.p5 ? this.p5._toRadians(a) : a;
+
   if (x instanceof p5.Vector) {
     // x is a vector, extract the components from it.
     y = x.y;
@@ -51360,8 +50780,8 @@ p5.Matrix.prototype.rotate = function(a, x, y, z) {
   var a23 = this.mat4[11];
 
   //sin,cos, and tan of respective angle
-  var sA = Math.sin(a);
-  var cA = Math.cos(a);
+  var sA = Math.sin(_a);
+  var cA = Math.cos(_a);
   var tA = 1 - cA;
   // Construct the elements of the rotation matrix
   var b00 = x * x * tA + cA;
@@ -51534,7 +50954,7 @@ p5.Matrix.prototype.ortho = function(left, right, bottom, top, near, far) {
 
 module.exports = p5.Matrix;
 
-},{"../core/main":23}],71:[function(_dereq_,module,exports){
+},{"../core/main":24}],72:[function(_dereq_,module,exports){
 /**
  * Welcome to RendererGL Immediate Mode.
  * Immediate mode is used for drawing custom shapes
@@ -51639,20 +51059,6 @@ p5.RendererGL.prototype.vertex = function(x, y) {
     vertexColor[3]
   );
 
-  if (this.textureMode === constants.IMAGE) {
-    if (this.textureImage !== undefined) {
-      if (this.textureImage.width > 0 && this.textureImage.height > 0) {
-        u /= this.textureImage.width;
-        v /= this.textureImage.height;
-      }
-    } else {
-      console.warn(
-        'You must first call texture() before using' +
-          ' vertex() with image based u and v coordinates'
-      );
-    }
-  }
-
   this.immediateMode.uvCoords.push(u, v);
 
   this.immediateMode._bezierVertex[0] = x;
@@ -51690,23 +51096,8 @@ p5.RendererGL.prototype.endShape = function(
     this._useImmediateModeShader();
 
     if (this._doStroke && this.drawMode !== constants.TEXTURE) {
-      if (this.immediateMode.shapeMode === constants.TRIANGLE_STRIP) {
-        var i;
-        for (i = 0; i < this.immediateMode.vertices.length - 2; i++) {
-          this.immediateMode.edges.push([i, i + 1]);
-          this.immediateMode.edges.push([i, i + 2]);
-        }
+      for (var i = 0; i < this.immediateMode.vertices.length - 1; i++) {
         this.immediateMode.edges.push([i, i + 1]);
-      } else if (this.immediateMode.shapeMode === constants.TRIANGLES) {
-        for (i = 0; i < this.immediateMode.vertices.length - 2; i = i + 3) {
-          this.immediateMode.edges.push([i, i + 1]);
-          this.immediateMode.edges.push([i + 1, i + 2]);
-          this.immediateMode.edges.push([i + 2, i]);
-        }
-      } else {
-        for (i = 0; i < this.immediateMode.vertices.length - 1; i++) {
-          this.immediateMode.edges.push([i, i + 1]);
-        }
       }
       if (mode === constants.CLOSE) {
         this.immediateMode.edges.push([
@@ -51851,10 +51242,7 @@ p5.RendererGL.prototype._drawFillImmediateMode = function(
       case constants.LINES:
       case constants.TRIANGLES:
         this.immediateMode.shapeMode =
-          this.isBezier ||
-          this.isQuadratic ||
-          this.isCurve ||
-          this.immediateMode.shapeMode === constants.TRIANGLES
+          this.isBezier || this.isQuadratic || this.isCurve
             ? constants.TRIANGLES
             : constants.TRIANGLE_FAN;
         break;
@@ -51948,7 +51336,7 @@ p5.RendererGL.prototype._drawStrokeImmediateMode = function() {
 
 module.exports = p5.RendererGL;
 
-},{"../core/constants":17,"../core/main":23}],72:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24}],73:[function(_dereq_,module,exports){
 //Retained Mode. The default mode for rendering 3D primitives
 //in WEBGL.
 'use strict';
@@ -52311,7 +51699,7 @@ p5.RendererGL.prototype._drawPoints = function(vertices, vertexBuffer) {
 
 module.exports = p5.RendererGL;
 
-},{"../core/main":23}],73:[function(_dereq_,module,exports){
+},{"../core/main":24}],74:[function(_dereq_,module,exports){
 'use strict';
 
 var p5 = _dereq_('../core/main');
@@ -52428,8 +51816,7 @@ p5.RendererGL = function(elt, pInst, isMainCanvas, attr) {
   this.stroke(0, 0, 0);
   // array of textures created in this gl context via this.getTexture(src)
   this.textures = [];
-  this.textureImage = undefined;
-  this.textureMode = constants.IMAGE;
+
   this._curveTightness = 6;
 
   // lookUpTable for coefficients needed to be calculated for bezierVertex, same are used for curveVertex
@@ -52630,7 +52017,7 @@ p5.RendererGL.prototype._resetContext = function(attr, options, callback) {
  *   rotateX(t * 0.77);
  *   rotateY(t * 0.83);
  *   rotateZ(t * 0.91);
- *   torus(width * 0.3, width * 0.07, 24, 10);
+ *   torus(width * 0.3, width * 0.07, 30, 10);
  * }
  *
  * function mousePressed() {
@@ -52889,40 +52276,9 @@ p5.RendererGL.prototype.strokeWeight = function(w) {
  *                                    [R, G, B, A] or <a href="#/p5.Image">p5.Image</a>
  */
 p5.RendererGL.prototype.get = function(x, y, w, h) {
-  var ctx = this._pInst || this;
-  var pd = ctx._pixelDensity;
-
-  var sx = x * pd;
-  var sy = y * pd;
-
-  if (w === 1 && h === 1) {
-    var pixels = new Uint8Array(4);
-    this.drawingContext.readPixels(
-      sx,
-      sy,
-      1,
-      1,
-      this.drawingContext.RGBA,
-      this.drawingContext.UNSIGNED_BYTE,
-      pixels
-    );
-    return [pixels[0], pixels[1], pixels[2], pixels[3]];
-  } else {
-    //auto constrain the width and height to
-    //dimensions of the source image
-    var dw = Math.min(w, ctx.width);
-    var dh = Math.min(h, ctx.height);
-    var sw = dw * pd;
-    var sh = dh * pd;
-
-    var region = new p5.Image(dw, dh);
-    region.canvas
-      .getContext('2d') // not sure this is correct
-      .drawImage(this.canvas, sx, sy, sw, sh, 0, 0, dw, dh);
-
-    return region;
-  }
+  return p5.Renderer2D.prototype.get.apply(this, [x, y, w, h]);
 };
+
 /**
  * Loads the pixels data for this canvas into the pixels[] attribute.
  * Note that updatePixels() and set() do not work.
@@ -53517,7 +52873,7 @@ p5.RendererGL.prototype._bezierToCatmull = function(w) {
 
 module.exports = p5.RendererGL;
 
-},{"../core/constants":17,"../core/main":23,"../core/p5.Renderer":26,"./p5.Camera":68,"./p5.Matrix":70,"./p5.Shader":74,"libtess":8}],74:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24,"../core/p5.Renderer":27,"./p5.Camera":69,"./p5.Matrix":71,"./p5.Shader":75,"libtess":9}],75:[function(_dereq_,module,exports){
 /**
  * This module defines the p5.Shader class
  * @module Lights, Camera
@@ -53968,7 +53324,7 @@ p5.Shader.prototype.enableAttrib = function(
 
 module.exports = p5.Shader;
 
-},{"../core/main":23}],75:[function(_dereq_,module,exports){
+},{"../core/main":24}],76:[function(_dereq_,module,exports){
 /**
  * This module defines the p5.Texture class
  * @module Lights, Camera
@@ -54320,7 +53676,7 @@ p5.Texture.prototype.setWrapMode = function(wrapX, wrapY) {
 
 module.exports = p5.Texture;
 
-},{"../core/constants":17,"../core/main":23}],76:[function(_dereq_,module,exports){
+},{"../core/constants":18,"../core/main":24}],77:[function(_dereq_,module,exports){
 'use strict';
 
 var p5 = _dereq_('../core/main');
@@ -55060,5 +54416,5 @@ p5.RendererGL.prototype._renderText = function(p, line, x, y, maxY) {
   return p;
 };
 
-},{"../core/constants":17,"../core/main":23,"./p5.RendererGL":73,"./p5.Shader":74}]},{},[12])(12)
+},{"../core/constants":18,"../core/main":24,"./p5.RendererGL":74,"./p5.Shader":75}]},{},[13])(13)
 });

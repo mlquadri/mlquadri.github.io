@@ -1,112 +1,180 @@
-//global varables
+
 var canvas;
+
 var userName;
 
 //screen text
 var title;
-var firstOptions;
-var secondOptions;
+var firstOption;
+var secondOption;
 
 //input
 var slider;
 var greeting;
 var nameInput;
+
 var growingPlanetBool = false;
 
+
+var startOver;
+
+//images
+
+var dancingBaby;
+var babyX = 0;
+
+var babySpeed = 2;
+
+var babySlider; 
+
+var babyScale;
 function preload(){
-    
+	
 }
 
 function setup() {
-    canvas = createCanvas(windowWidth, windowHeight);
-    canvas.position(0,0);
-    canvas.style('z-index', '-1');
-    background(120);
-    beginning();
+	canvas = createCanvas(windowWidth, windowHeight);
+	canvas.position(0,0);
+	canvas.style('z-index', '-1');
+	background(120);
+	beginning();
 }
 
 function draw() {
-  background(0)
-    if(growingPlanetBool){
-        growingPlanet();
-    }
-
+	background(0);
+	babyAnim();
+	
+	print(babyX);
+	if(growingPlanetBool == true){
+		growingPlanet();
+	}
 }
 
-function windowResized(){
-  canvas = createCanvas(windowWidth, windowHeight);
-}
 
-////////////////////////////////////
-///////scene start functions////////
-////////////////////////////////////
+/////////////////////////////////////
+////////scene start functions///////
+///////////////////////////////////
 
 function beginning(){
-  background(0);
-  greeting = createP("Please type your name and press enter");
-  nameInput = createInput();
-  //check and see if the user pressed enter if so trigers start story
-  nameInput.changed(startStory);
+	background(0);
+	
+	dancingBaby = createImg("dancingBaby.gif");
+	 babySlider = createSlider(50, 600, 150);
+	greeting = createP("Please type your name and press enter");
+	nameInput = createInput();
+
+	//check and see if the user pressed enter
+	//then trigger startStory function
+	nameInput.changed(startStory);
+	
 }
+
+function babyAnim(){
+	//babyX = babyX + babySpeed;
+	babyScale = babySlider.value();
+	dancingBaby.position(babyX, 200);
+	dancingBaby.style('width', babySlider.value() + 'px');
+	if(babyX > windowWidth +100){
+		babyX = 0; 
+	}
+
+	dancingBaby.mousePressed(startStory);
+}
+
 
 function startStory(){
-  background(0);
-  greeting.hide();
-  nameInput.hide();
-  userName = createElement('h1', nameInput.value());
-  title = createElement("h1", "Get home before the sun sets")
-  //create link("Where to link", "Link text")
-  firstOptions
-  createElement("br")
-  secondOptions = createA("#","Walk towards the sun");
-  //checks to see if the user has pressed the stated objects is so trigers stated function
-  firstOptions.mousePressed(walkHome);
-  secondOptions.mousePressed(walkToSun);
+	//background(0);
+	greeting.hide();
+	nameInput.hide();
+	dancingBaby.hide();
+	userName = createElement('h1', nameInput.value());
+
+	title = createElement('h1', 'Get home before the sun sets');
+
+	//create link want two arguments: where to link and the text
+	firstOption = createA("#", "walk home");
+	createElement('br');
+	secondOption = createA("#", "walk towards the sun");
+
+	//check to see if the user has clicked on one of the options
+	//trigger attached function
+	firstOption.mousePressed(walkHome);
+	secondOption.mousePressed(walkToSun);
+
+
 }
 
+//the end of the game
 function walkHome(){
-  background(0);
-  secondOptions.hide();
-  userName.hide();
-  title=createElement("h1", "You got Home")
-  firstOptions=createA("#", "Start Over");
-  firstOptions.mousePressed(beginning);
+	background(0);
+	firstOption.hide();
+	secondOption.hide();
+	userName.hide();
+ 
+	//change the text for the title
+	title.html("You have gone home. Good Night.");
+
+	//startOver = createA("index.html", "Start Over")
+	//firstOption.mousePressed(startOver);
 }
 
 function walkToSun(){
-  background(0);
-  userName.hide();
-  title.html(nameInput.value() + ", you walk towards the sun and see a planet")
-  firstOptions=createA("#", "Continue walking the sun");
-  createElement("br")
-  secondOptions=createA("#", "Walk to the planet");
-  firstOptions.mousePressed(closerToSun);
-  secondOptions.mousePressed(planetElements);
+	background(0);
+	userName.hide();
+	title.html(nameInput.value() + ', you walk towards the sun and see a planet');
+
+	firstOption.html("walk closer to the sun");
+	secondOption.html("Walk towards the planet");
+
+	firstOption.mousePressed(closerToSun);
+	secondOption.mousePressed(planetElements);
 }
 
 function closerToSun(){
-  background(0);
-  firstOptions.hide();
-  secondOptions.hide();
-  title.html(nameInput.value() + ", you reach the edge of the sun")
+	firstOption.hide();
+	secondOption.hide();
+
+	title.html(nameInput.value() + ', drifting towards the sun');
 }
+
 
 function planetElements(){
-  firstOptions.hide();
-  secondOptions.hide();
-  slider = createSlider(0, 255, 0);
-  createP(nameInput.value() + " control the size of the planet");
-  growingPlanetBool = true;
+	firstOption.hide();
+	secondOption.hide();
+	 slider = createSlider(0, 255, 0);
+	 
+	title.html(nameInput.value() + " control the size of the planet");
+	growingPlanetBool = true;
 }
 
+
 /////////////////////////////////////
-//////////animated function//////////
-/////////////////////////////////////
+////////animated functions//////////
+///////////////////////////////////
+
 function growingPlanet(){
-  background(120);
-  //slider requires at least two arguments
-  //createSlider(min value, max value, starting value)
-  print(slider.value());
-  fill(slider.value());
-  ellipse(400, 400, slider.value(), slider.value());
+	
+	 background(120);
+	 //slider requires at least two arguments
+	//createSlider(min value, max value, starting value)
+  	print(slider.value());
+  	fill(slider.value());
+  	ellipse(400, 400, slider.value(), slider.value());
 }
+
+
+
+
+
+function windowResized(){
+  canvas = createCanvas(windowWidth, windowHeight);
+  
+}
+ 
+ 
+
+
+
+
+
+
