@@ -77,7 +77,6 @@ function babyAnim(){
 	if(babyX > windowWidth +100){
 		babyX = 0; 
 	}
-
 	dancingBaby.mousePressed(startStory);
 }
 

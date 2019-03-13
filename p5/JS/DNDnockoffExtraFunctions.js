@@ -1,6 +1,179 @@
 ///////////////////////////////////////////
+/////////inner-Scene Functions/////////////
+///////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////preScene///////////////////////////////////////////////////////////
+function preScene_nameAct(){
+	nameEntered = true;
+	userName = nameInput.value()
+	print(userName)
+}
+function preScene_diceAct(){
+	if(diceButtonClicked < 4){
+		rollDice();
+		diceButtonClicked+=1;
+	}else{
+		print("Error: user tryed to roll dice an extra time - request denied")
+	}
+}
+function preScene_defInputAct(){
+	statDefence = defInput.value();
+	print(statDefence)
+	//truelist+=true
+}
+function preScene_sneakInputAct(){
+	statStelth = sneakInput.value();
+	print(statStelth)
+	//truelist+=true
+	}
+function preScene_attackInputAct(){
+	statAttack = attackInput.value();
+	print(statAttack)
+	//truelist+=true
+}
+function preScene_charmInputAct(){
+	statCrisma = charmInput.value();
+	print(statCrisma)
+	//truelist+=true
+}
+function preScene_hide(){
+	nameInput.hide();
+	dice.hide();
+	defInput.hide();
+	attackInput.hide();
+	charmInput.hide();
+	sneakInput.hide();
+}
+
+///////////////////////////////////////////////////////////////Scene2_0///////////////////////////////////////////////////////////////
+function Scene2_0_option1Act(){
+	Scene3_0();
+}
+function Scene2_0_option2Act(){
+	Scene3_0();
+}
+function Scene2_0_option3Act(){
+	Scene3_0();
+}
+function Scene2_0_option4Act(){
+	if(checkStats(statCharm, 1)){
+		Scene2_0();
+	}else{
+		Scene2_0();
+	}
+}
+
+///////////////////////////////////////////////////////////////Scene2_1///////////////////////////////////////////////////////////////
+function Scene2_1_option1Act(){
+	if(checkStats(statAttack, 1)){
+		Scene3_0()
+	}else{
+		sceneDeath();
+	}
+}
+function Scene2_1_option2Act(){
+	if(checkStats(statDefence, 1)){
+		incentive+=1;
+		Scene2_1()
+	}else{
+		incentive-=1;
+		Scene2_1();
+	}
+}
+function Scene2_1_option3Act(){
+	if(checkStats(statCharm, 1)){
+		Scene3_0();
+	}else{
+		sceneDeath();
+	}
+}
+function Scene2_1_option4Act(){
+	if(checkStats(statStelth, 1)){
+		Scene1_0()
+	}else{
+		Scene2_1();
+	}
+}
+
+///////////////////////////////////////////////////////////////Scene3_0///////////////////////////////////////////////////////////////
+function Scene3_0_option1Act(){
+	if(checkStats(statAttack, 1)){
+		Scene3_0
+	}else{
+		sceneDeath
+	}
+}
+function Scene3_0_option2Act(){
+	if(checkStats(statDefence, 1)){
+		incentive+=1;
+		Scene2_1
+	}else{
+		incentive-=1;
+		Scene2_1
+	}
+}
+function Scene3_0_option3Act(){
+	if(checkStats(statCharm, 1)){
+		Scene3_0
+	}else{
+		sceneDeath
+	}
+}
+function Scene3_0_option4Act(){
+	if(checkStats(statStelth, 1)){
+		Scene1_0
+	}else{
+		Scene2_1
+	}
+}
+
+///////////////////////////////////////////////////////////////sceneDeath///////////////////////////////////////////////////////////////
+function sceneDeath_hide(){
+	nameInput.hide();
+	dice.hide();
+	defInput.hide();
+	attackInput.hide();
+	charmInput.hide();
+	sneakInput.hide();
+	option1.hide();
+	option2.hide();
+	option3.hide();
+	option4.hide();
+}
+
+///////////////////////////////////////////
 //////////Non-Scene Functions//////////////
 ///////////////////////////////////////////
+
+function setUpTags(){
+	title = createP("");
+    createElement('br');
+	screenBody = createP("");
+    createElement('br');
+    nameInput = createInput(); 
+    createElement('br');
+	dice = createA("#","");
+    createElement('br');
+    defInput = createInput();
+    createElement('br');
+    attackInput = createInput();
+    createElement('br');
+    charmInput = createInput();
+    createElement('br');
+    sneakInput = createInput();
+    createElement('br');
+	option1 = createA("#","");
+    createElement('br');
+	option2 = createA("#","");
+    createElement('br');
+	option3 = createA("#","");
+    createElement('br');
+	option4 = createA("#","");``
+    createElement('br');
+	restart = createA("file:///C:/Users/mslhq/Documents/GitHub/mlquadri.github.io/p5/index2.html#","");
+	//sideImage = createImg("image location");
+}
 
 function randrange(maxInt, minInt){
   min = Math.ceil(maxInt);

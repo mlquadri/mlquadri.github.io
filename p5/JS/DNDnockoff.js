@@ -1,16 +1,19 @@
 //global varables to be used on this file only
 var canvas;
+var gold
 
-//screen text
+//screen varables
 var title;
 var screenBody;
-var userName;
+var userName = "";
 var dice;
 var option1;
 var option2;
 var option3;
 var option4;
+var restart;
 var trueList;
+//sideImage;
 
 //input
 var slider;
@@ -26,16 +29,20 @@ var weapon;
 var armor;
 var shoes;
 var charm;
+var nameEntered = true;
+var diceButtonClicked = 4;
+//var trueList[];
 
 function preload(){
     
 }
 
 function setup() {
+    background(120);
     canvas = createCanvas(windowWidth, windowHeight);
     canvas.position(0,0);
     canvas.style('z-index', '-1');
-    background(120);
+    setUpTags();
     preScene();
 }
 
@@ -52,120 +59,122 @@ function windowResized(){
 ////////////////////////////////////
 
 function preScene(){
-    var nameEntered = false;
-    var buttonClicked = 0;
-    //trueList[];
     background(0);
 
     //title and text
-    title = createP("Enter the stuffies");
-    screenBody = createP("Enter your carecter name and stats. As the game progresses you will be able to succeed in action depending on how high your related stat (or stats) are. Also you will be able to rase your stats in game by gaining equipment. Finaly be warned that by failing encounters you can lower your chance at the next one");
+    title.html("Enter the stuffies");
+    screenBody.html("Enter your carecter name and stats. As the game progresses you will be able to succeed in action depending on how high your related stat (or stats) are. Also you will be able to rase your stats in game by gaining equipment. Finaly be warned that by failing encounters you can lower your chance at the next one");
     
     //name input
-    nameInput = createInput(); 
     nameInput.style("placeholder", "Enter Name");
-    //nameInput.changed(); //
-    function nameAct(){ nameEntered = true; userName = nameInput.value() }
-    createElement('br');
+    nameInput.changed(preScene_nameAct);
 
     //stat dice
-    dice = createA("#","Role Dice");
-    //dice.mousePressed(rollDice());
-    createElement('br');
+    dice.html("Role Dice");
+    dice.mousePressed(preScene_diceAct);
 
     //stat inputs
-    defInput = createInput();
     defInput.style("placeholder", "Enter defence stat");
-    createElement('br');
-    attackInput = createInput();
     attackInput.style("placeholder", "Enter attack stat");
-    createElement('br');
-    charmInput = createInput();
     charmInput.style("placeholder", "Enter charm stat");
-    createElement('br');
-    sneakInput = createInput();
     sneakInput.style("placeholder", "Enter sneak stat");
-    createElement('br');
-    //defInput.changed(statDefence = defInput.value());
-    //attackInput.changed(statAttack = attackInput.value());
-    //charmInput.changed(statCrisma = charmInput.value());
-    //sneakInput.changed(statStelth = sneakInput.value());
+    defInput.changed(preScene_defInputAct);
+    attackInput.changed(preScene_attackInputAct);
+    charmInput.changed(preScene_charmInputAct);
+    sneakInput.changed(preScene_sneakInputAct);
 
-    option1 = createA("#","Start");
-    option1.mousePressed(firstScene);
+    //start game
+    option1.html("Start game");
+    option1.mousePressed(Scene1);
 }
 
 function Scene1(){
+    preScene_hide()
     background(0);
-    title.html(userName + ", Title")
+    title.html(userName + ", Title");
+    createElement('br');
     screenBody.html("2 paths");
-    option1 = createA("#", "Go right");
-    option2 = createA("#", "Go left");
+    createElement('br');
+    option1.html("Go right")
+    createElement('br');
+    option2.html("Go left");
+    createElement('br');
 
     //user input
-    option1.mousePressed(Scene2_1());
-    option2.mousePressed(Scene2_0());
+    option1.mousePressed(Scene2_1);
+    option2.mousePressed(Scene2_0);
 }
 
 function Scene2_0(){
     background(0);
-    title.html(userName + ", Title")
-    screenBody.html("Body Text");
-    option1 = createA("#", "option1 (Attack)");
-    option2 = createA("#", "option2 (deffend)");
-    option3 = createA("#", "option3 (charm)");
-    option4 = createA("#", "option4 (sneak)");
+    title.html(userName + ", You see a merchant");
+    createElement('br');
+    screenBody.html("He will sale you a sword, cottorn armor, or boots.");
+    createElement('br');
+    option1.html("Sword (Attack)");
+    createElement('br');
+    option2.html("Cotton armor (deffend)");
+    createElement('br');
+    option3.html("boots (steath)");
+    createElement('br');
+    option4.html("try to sweet talk beter prices (charm)");
+    createElement('br');
 
     //user input
-    option1.mousePressed(option1Act());
-    option2.mousePressed(option2Act());
-    option3.mousePressed(option3Act());
-    option4.mousePressed(option4Act());
-    function option1Act(){if(checkStats(statAttack, 1)){Scene3_0}}
-    function option2Act(){if(checkStats(statDefence, 1)){Scene3_0}}
-    function option3Act(){if(checkStats(statCharm, 1)){Scene3_0}}
-    function option4Act(){if(checkStats(statStelth, 1)){Scene3_0}}
+    option1.mousePressed(Scene2_0_option1Act);
+    option2.mousePressed(Scene2_0_option2Act);
+    option3.mousePressed(Scene2_0_option3Act);
+    option4.mousePressed(Scene2_0_option4Act);
 }
 
 function Scene2_1(){
     background(0);
-    title.html(nameInput.value() + ", Title")
+    title.html(nameInput.value() + ", Title");
+    createElement('br');
     screenBody.html("You see a bandit");
-    option1 = createA("#", "Fight (Attack)");
-    option2 = createA("#", "Fight (deffend)");
-    option3 = createA("#", "Try to talk past him (charm)");
-    option4 = createA("#", "Try to sneak back and go the other way(sneak)");
+    createElement('br');
+    option1.html("Fight (Attack)");
+    createElement('br');
+    option2.html("Fight (deffend)");
+    createElement('br');
+    option3.html("Try to talk past him (charm)");
+    createElement('br');
+    option4.html("Try to sneak back and go the other way(sneak)");
+    createElement('br');
 
     //user input
-    option1.mousePressed(option1Act());
-    option2.mousePressed(option2Act());
-    option3.mousePressed(option3Act());
-    option4.mousePressed(option4Act());
-    function option1Act(){if(checkStats(statAttack, 1)){Scene3_0}else{sceneDeath}}
-    function option2Act(){if(checkStats(statDefence, 1)){incentive+=1; Scene2_1}else{incentive-=1; Scene2_1}}
-    function option3Act(){if(checkStats(statCharm, 1)){Scene3_0}else{sceneDeath}}
-    function option4Act(){if(checkStats(statStelth, 1)){Scene1_0}else{Scene2_1}}
+    option1.mousePressed(Scene2_1_option1Act);
+    option2.mousePressed(Scene2_1_option2Act);
+    option3.mousePressed(Scene2_1_option3Act);
+    option4.mousePressed(Scene2_1_option4Act);
 }
 function Scene3_0(){
     background(0);
-    title.html(nameInput.value() + ", Title")
+    title.html(nameInput.value() + ", Title");
+    createElement('br');
     screenBody.html("You see a bandit");
-    option1 = createA("#", "Fight (Attack)");
-    option2 = createA("#", "Fight (deffend)");
-    option3 = createA("#", "Try to talk past him (charm)");
-    option4 = createA("#", "Try to sneak back and go the other way(sneak)");
+    createElement('br');
+    option1.html("Fight (Attack)");
+    createElement('br');
+    option2.html("Fight (deffend)");
+    createElement('br');
+    option3.html("Try to talk past him (charm)");
+    createElement('br');
+    option4.html("Try to sneak back and go the other way(sneak)");
+    createElement('br');
 
     //user input
-    option1.mousePressed(option1Act());
-    option2.mousePressed(option2Act());
-    option3.mousePressed(option3Act());
-    option4.mousePressed(option4Act());
-    function option1Act(){if(checkStats(statAttack, 1)){Scene3_0}else{sceneDeath}}
-    function option2Act(){if(checkStats(statDefence, 1)){incentive+=1; Scene2_1}else{incentive-=1; Scene2_1}}
-    function option3Act(){if(checkStats(statCharm, 1)){Scene3_0}else{sceneDeath}}
-    function option4Act(){if(checkStats(statStelth, 1)){Scene1_0}else{Scene2_1}}
+    option1.mousePressed(Scene3_0_option1Act);
+    option2.mousePressed(Scene3_0_option2Act);
+    option3.mousePressed(Scene3_0_option3Act);
+    option4.mousePressed(Scene3_0_option4Act);
 }
 
 function sceneDeath(){
+    sceneDeath_hide();
     background(0);
+    title.html(nameInput.value() + ", you have died");
+    createElement('br');
+    screenBody.html("A traveling bard found you with: "+gold+" peace of gold");
+    restart.html("Try Agian")
 }
