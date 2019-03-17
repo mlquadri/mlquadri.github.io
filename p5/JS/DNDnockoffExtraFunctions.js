@@ -117,7 +117,7 @@ function Scene3_0_option3Act(){
 	if(checkStats(statCharm, 1)){
 		
 	}else{
-		sceneDeath():
+		sceneDeath();
 	}
 }
 function Scene3_0_option4Act(){
