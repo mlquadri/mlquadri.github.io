@@ -203,6 +203,7 @@ function checkStats(statType, level){
 				print("final check: passed")
 				return true;
 			}else{
+				print(statDefence+incentive+armor+">"+level)
 				return false;
 			}
 		}else if(statType = "attac"){
@@ -211,6 +212,7 @@ function checkStats(statType, level){
 				print("final check: passed")
 				return true;
 			}else{
+				print(statAttack+incentive+armor+">"+level)
 				return false;
 			}
 		}else if(statType = "sneak"){
@@ -219,6 +221,7 @@ function checkStats(statType, level){
 				print("final check: passed")
 				return true;
 			}else{
+				print(statStelth+incentive+armor+">"+level)
 				return false;
 			}
 		}else if(statType = "charm"){
@@ -227,6 +230,7 @@ function checkStats(statType, level){
 				print("final check: passed")
 				return true;
 			}else{
+				print(statCharm+incentive+armor+">"+level)
 				return false;
 			}
 		}else{
