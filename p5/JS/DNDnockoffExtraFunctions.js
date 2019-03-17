@@ -199,28 +199,32 @@ function checkStats(statType, level){
 		print("incentive check: passed")
 		if(statType = "def"){
 			print("statType (def) check: passed")
-			if( (statDefence+incentive+armor) >= level){
+			if( (statDefence+incentive+armor) > level){
+				print("final check: passed")
 				return true;
 			}else{
 				return false;
 			}
 		}else if(statType = "attac"){
 			print("statType (attac) check: passed")
-			if( (statAttack+incentive+weapon) >= level){
+			if( (statAttack+incentive+weapon) > level){
+				print("final check: passed")
 				return true;
 			}else{
 				return false;
 			}
 		}else if(statType = "sneak"){
 			print("incentive (sneak) check: passed")
-			if( (statStelth+incentive+shoes) >= level){
+			if( (statStelth+incentive+shoes) > level){
+				print("final check: passed")
 				return true;
 			}else{
 				return false;
 			}
 		}else if(statType = "charm"){
 			print("incentive (charm) check: passed")
-			if( (statCharm+incentive+charm) >= level){
+			if( (statCharm+incentive+charm) > level){
+				print("final check: passed")
 				return true;
 			}else{
 				return false;
@@ -233,25 +237,25 @@ function checkStats(statType, level){
 		print("incentive check: failed")
 		print("random check: passed")
 		if(statType = "def"){
-			if( (statDefence+armor) >= level){
+			if( (statDefence+armor) > level){
 				return true;
 			}else{
 				return false;
 			}
 		}else if(statType = "attac"){
-			if( (statAttack+weapon) >= level){
+			if( (statAttack+weapon) > level){
 				return true;
 			}else{
 				return false;
 			}
 		}else if(statType = "sneak"){
-			if( (statStelth+shoes) >= level){
+			if( (statStelth+shoes) > level){
 				return true;
 			}else{
 				return false;
 			}
 		}else if(statType = "charm"){
-			if( (statCharm+charm) >= level){
+			if( (statCharm+charm) > level){
 				return true;
 			}else{
 				return false;
