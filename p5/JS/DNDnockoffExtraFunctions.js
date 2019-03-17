@@ -196,6 +196,7 @@ function checkIncentive(){
 //CheckStats
 function checkStats(statType, level){
 	if(incentive > 0){
+		print("incentive check: passed")
 		if(statType = "def"){
 			if( (statDefence+incentive+armor) >= level){
 				return true;
@@ -225,6 +226,8 @@ function checkStats(statType, level){
 			return false;
 		}
 	}else if(randrange(0, 1) == 1){
+		print("incentive check: failed")
+		print("random check: passed")
 		if(statType = "def"){
 			if( (statDefence+armor) >= level){
 				return true;
@@ -254,6 +257,8 @@ function checkStats(statType, level){
 			return false;
 		}
 	}else{
+		print("incentive check: failed")
+		print("random check: failed")
 		return false;
 	}
 }
