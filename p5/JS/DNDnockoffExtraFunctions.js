@@ -90,9 +90,9 @@ function Scene2_1_option3Act(){
 }
 function Scene2_1_option4Act(){
 	if(checkStats(statStelth, 1)){
-		Scene1_0()
+		Scene1();
 	}else{
-		Scene2_1();
+		sceneDeath();
 	}
 }
 
