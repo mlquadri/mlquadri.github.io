@@ -198,24 +198,28 @@ function checkStats(statType, level){
 	if(incentive > 0){
 		print("incentive check: passed")
 		if(statType = "def"){
+			print("statType (def) check: passed")
 			if( (statDefence+incentive+armor) >= level){
 				return true;
 			}else{
 				return false;
 			}
 		}else if(statType = "attac"){
+			print("statType (attac) check: passed")
 			if( (statAttack+incentive+weapon) >= level){
 				return true;
 			}else{
 				return false;
 			}
 		}else if(statType = "sneak"){
+			print("incentive (sneak) check: passed")
 			if( (statStelth+incentive+shoes) >= level){
 				return true;
 			}else{
 				return false;
 			}
 		}else if(statType = "charm"){
+			print("incentive (charm) check: passed")
 			if( (statCharm+incentive+charm) >= level){
 				return true;
 			}else{
