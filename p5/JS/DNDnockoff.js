@@ -167,7 +167,6 @@ function Scene3_0(){
     option1.mousePressed(Scene3_0_option1Act);
     option2.mousePressed(Scene3_0_option2Act);
     option3.mousePressed(Scene3_0_option3Act);
-    option4.mousePressed(Scene3_0_option4Act);
 }
 
 function sceneDeath(){
@@ -176,5 +175,5 @@ function sceneDeath(){
     title.html(nameInput.value() + ", you have died");
     createElement('br');
     screenBody.html("A traveling bard found you with: "+gold+" peace of gold");
-    restart.html("Try Agian")
+    restart.html("Try Agian");
 }
