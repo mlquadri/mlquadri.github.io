@@ -152,7 +152,7 @@ function Scene3_0(){
     background(0);
     title.html(nameInput.value() + ", Title");
     createElement('br');
-    screenBody.html("You see a bandit");
+    screenBody.html("You see a bear");
     createElement('br');
     option1.html("Fight (Attack)");
     createElement('br');

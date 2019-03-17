@@ -99,32 +99,32 @@ function Scene2_1_option4Act(){
 ///////////////////////////////////////////////////////////////Scene3_0///////////////////////////////////////////////////////////////
 function Scene3_0_option1Act(){
 	if(checkStats(statAttack, 1)){
-		Scene3_0
+		
 	}else{
-		sceneDeath
+		sceneDeath();
 	}
 }
 function Scene3_0_option2Act(){
 	if(checkStats(statDefence, 1)){
 		incentive+=1;
-		Scene2_1
+		Scene3_0();
 	}else{
 		incentive-=1;
-		Scene2_1
+		Scene3_0();
 	}
 }
 function Scene3_0_option3Act(){
 	if(checkStats(statCharm, 1)){
-		Scene3_0
+		
 	}else{
-		sceneDeath
+		sceneDeath():
 	}
 }
 function Scene3_0_option4Act(){
 	if(checkStats(statStelth, 1)){
-		Scene1_0
+		
 	}else{
-		Scene2_1
+		
 	}
 }
 
