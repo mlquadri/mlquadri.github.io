@@ -195,7 +195,7 @@ function checkIncentive(){
 
 //CheckStats
 function checkStats(statType, level){
-	if(incentive >= 0){
+	if(incentive > 0){
 		if(statType = "def"){
 			if( (statDefence+incentive+armor) >= level){
 				return true;

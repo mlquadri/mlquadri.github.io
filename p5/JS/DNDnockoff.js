@@ -24,7 +24,7 @@ var statAttack;
 var statDefence;
 var statCharm;
 var statStelth;
-var incentive;
+var incentive = 2;
 var weapon;
 var armor;
 var shoes;
