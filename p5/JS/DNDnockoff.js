@@ -150,7 +150,7 @@ function Scene2_1(){
 }
 function Scene3_0(){
     background(0);
-    title.html(nameInput.value() + ", Title");
+    title.html(nameInput.value() + ", Bear");
     createElement('br');
     screenBody.html("You see a bear");
     createElement('br');
