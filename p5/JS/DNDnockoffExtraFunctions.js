@@ -18,22 +18,22 @@ function preScene_diceAct(){
 	}
 }
 function preScene_defInputAct(){
-	statDefence = defInput.value();
+	statDefence = int(defInput.value());
 	print(statDefence)
 	//truelist+=true
 }
 function preScene_sneakInputAct(){
-	statStelth = sneakInput.value();
+	statStelth = int(sneakInput.value());
 	print(statStelth)
 	//truelist+=true
 	}
 function preScene_attackInputAct(){
-	statAttack = attackInput.value();
+	statAttack = int(attackInput.value());
 	print(statAttack)
 	//truelist+=true
 }
 function preScene_charmInputAct(){
-	statCrisma = charmInput.value();
+	statCrisma = int(charmInput.value());
 	print(statCrisma)
 	//truelist+=true
 }
