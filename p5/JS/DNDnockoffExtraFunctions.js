@@ -11,7 +11,7 @@ function preScene_diceAct(){
 	print(diceButtonClicked)
 	if(diceButtonClicked < 4){
 		diceList[diceButtonClicked] = rollDice(20);
-		alert(diceNum);
+		alert(diceList[diceButtonClicked]);
 		diceButtonClicked+=1;
 	}else{
 		print("Error: user tryed to roll dice an extra time - request denied")
