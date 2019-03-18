@@ -29,7 +29,7 @@ var armor = 0;
 var shoes = 0;
 var charm = 0;
 var diceButtonClicked = 0;
-var dice = [0, 0, 0, 0];
+var diceList = [0, 0, 0, 0];
 var nameEntered = true;
 
 function preload(){
