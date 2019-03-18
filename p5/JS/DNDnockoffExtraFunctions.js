@@ -177,7 +177,10 @@ function setUpTags(){
 function checkIncentive(){return (incentive >= 0);}
 
 //dice rolled
-function rollDice(dNum){return int(randrange(0, dNum));}
+function rollDice(dNum){
+	num = randrange(0, dNum);
+	return num;
+}
 
 function randrange(maxInt, minInt){
   min = Math.ceil(maxInt);
