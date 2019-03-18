@@ -8,6 +8,7 @@ function preScene_nameAct(){
 	userName = nameInput.value()
 }
 function preScene_diceAct(){
+	print(diceButtonClicked)
 	if(diceButtonClicked < 4){
 		diceNum = rollDice();
 		alert(diceNum);
