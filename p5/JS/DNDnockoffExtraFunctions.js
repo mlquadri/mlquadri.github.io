@@ -10,7 +10,7 @@ function preScene_nameAct(){
 function preScene_diceAct(){
 	if(diceButtonClicked < 4){
 		diceList[diceButtonClicked] = rollDice(20);
-		print("Diced Rolled "+(diceButtonClicked+1)+" times and you got a:"+diceList[diceButtonClicked]+"on the last roll");
+		print("Diced Rolled "+(diceButtonClicked+1)+" times and you got a "+diceList[diceButtonClicked]+" on the last roll");
 		alert(diceList[diceButtonClicked]);
 		diceButtonClicked+=1;
 	}else{
@@ -28,13 +28,13 @@ function preScene_attackInputAct(){
 	statAttack = int(attackInput.value());
 }
 function preScene_charmInputAct(){
-	statCrisma = int(charmInput.value());
+	statCharm = int(charmInput.value());
 }
 
 function preScene_option1Act(){
 	if( (diceButtonClicked >= 4) && (nameEntered) ){
 		trueList = [false, false, false, false];
-		statList = [statDefence, statStelth, statAttack, statCrisma];
+		statList = [statDefence, statStelth, statAttack, statCharm];
 		for (var i = 0; i < 4; i++){
 			if(diceList[i] == statList[0]){
 				trueList[i] = true;

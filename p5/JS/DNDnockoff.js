@@ -19,10 +19,10 @@ var restart;
 var nameInput;
 
 //global varables to be used on other files to
-var statAttack;
-var statDefence;
-var statCharm;
-var statStelth;
+var statAttack = -99;
+var statDefence = -99;
+var statCharm = -99;
+var statStelth = -99;
 var incentive = 2;
 var weapon = 0;
 var armor = 0;
