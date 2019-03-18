@@ -196,41 +196,41 @@ function checkIncentive(){
 //CheckStats
 function checkStats(statType, level){
 	if(incentive > 0){
-		print("incentive check: passed")
+		print("incentive check: passed");
 		if(statType = "def"){
-			print("statType (def) check: passed")
+			print("statType (def) check: passed");
 			if( (statDefence+incentive+armor) > level){
-				print("final check: passed")
+				print("final check: passed");
 				return true;
 			}else{
-				print(statDefence+incentive+armor+">"+level)
+				print(statDefence+incentive+armor+">"+level);
 				return false;
 			}
 		}else if(statType = "attac"){
-			print("statType (attac) check: passed")
+			print("statType (attac) check: passed");
 			if( (statAttack+incentive+weapon) > level){
-				print("final check: passed")
+				print("final check: passed");
 				return true;
 			}else{
-				print(statAttack+incentive+armor+">"+level)
+				print(statAttack+incentive+armor+">"+level);
 				return false;
 			}
 		}else if(statType = "sneak"){
-			print("incentive (sneak) check: passed")
+			print("incentive (sneak) check: passed");
 			if( (statStelth+incentive+shoes) > level){
-				print("final check: passed")
+				print("final check: passed");
 				return true;
 			}else{
-				print(statStelth+incentive+armor+">"+level)
+				print(statStelth+incentive+armor+">"+level);
 				return false;
 			}
 		}else if(statType = "charm"){
-			print("incentive (charm) check: passed")
+			print("incentive (charm) check: passed");
 			if( (statCharm+incentive+charm) > level){
-				print("final check: passed")
+				print("final check: passed");
 				return true;
 			}else{
-				print(statCharm+incentive+armor+">"+level)
+				print(statCharm+incentive+armor+">"+level);
 				return false;
 			}
 		}else{
@@ -238,8 +238,8 @@ function checkStats(statType, level){
 			return false;
 		}
 	}else if(randrange(0, 1) == 1){
-		print("incentive check: failed")
-		print("random check: passed")
+		print("incentive check: failed");
+		print("random check: passed");
 		if(statType = "def"){
 			if( (statDefence+armor) > level){
 				return true;
@@ -269,8 +269,8 @@ function checkStats(statType, level){
 			return false;
 		}
 	}else{
-		print("incentive check: failed")
-		print("random check: failed")
+		print("incentive check: failed");
+		print("random check: failed");
 		return false;
 	}
 }
