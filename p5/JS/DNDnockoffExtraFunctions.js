@@ -32,7 +32,7 @@ function preScene_charmInputAct(){
 }
 
 function preScene_option1Act(){
-	if(diceButtonClicked >= 4){
+	if( (diceButtonClicked >= 4) $$ (nameEntered) ){
 		trueList = [false, false, false, false];
 		statList = [statDefence, statStelth, statAttack, statCrisma];
 		for (var i = 0; i < 4; i++){
@@ -56,8 +56,10 @@ function preScene_option1Act(){
 		if( (trueList[0] == true) && (trueList[1] == true) && (trueList[2] == true) && (trueList[3] == true) ){
 			Scene1();
 		}else{
-			print("Error: can not continue to scene1, needs debuging");
+			print("Error: can not continue to scene1");
 		}
+	}else{
+		print("Error: can not continue to scene1 /n name ="+nameEntered+"/n diceButtonClicked ="+diceButtonClicked);
 	}
 }
 
