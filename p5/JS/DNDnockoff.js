@@ -1,6 +1,5 @@
 //global varables to be used on this file only
 var canvas;
-var gold
 
 //screen varables
 var title;
@@ -28,9 +27,10 @@ var weapon = 0;
 var armor = 0;
 var shoes = 0;
 var charm = 0;
+var gold = randrange(0, 10);
 var diceButtonClicked = 0;
 var diceList = [0, 0, 0, 0];
-var nameEntered = true;
+var nameEntered = false;
 
 function preload(){
     

@@ -50,7 +50,7 @@ function preScene_option1Act(){
 				statList[3] = -99;
 			}else{
 				print("Error: Inputed values do not equal rolled numbers: "+(diceList[i])+" not found");
-				alert( (diceList[i])+" was not rolled, please only use the number rolled: "+(diceList[0])+", "+(diceList[1])+", "+(diceList[2])+", "+(diceList[3]))
+				alert( "A non-rolled was used, please only use the number rolled: "+(diceList[0])+", "+(diceList[1])+", "+(diceList[2])+", "+(diceList[3]))
 			}
 		}
 		if( (trueList[0] == true) && (trueList[1] == true) && (trueList[2] == true) && (trueList[3] == true) ){
@@ -58,12 +58,12 @@ function preScene_option1Act(){
 		}else{
 			print("Error: can not continue to scene1");
 		}
-	}else if(diceButtonClicked >= 4){
-		print("Error: can not continue to scene1: no name name entered \n name ="+nameEntered);
-		alert("Please enter a Name");
 	}else if(nameEntered){
 		print("Error: can not continue to scene1: didn't get 4 dice numbers \n diceButtonClicked = "+diceButtonClicked);
 		alert("Please get 4 dice numbers, so far youve rolled "+diceButtonClicked+" dices");
+	}else if(diceButtonClicked >= 4){
+		print("Error: can not continue to scene1: no name name entered \n name ="+nameEntered);
+		alert("Please enter a Name");
 	}else{
 		print("Error: can not continue to scene1 \n name = "+nameEntered+"\n diceButtonClicked = "+diceButtonClicked);
 	}
@@ -196,7 +196,7 @@ function setUpTags(){
     createElement('br');
 	option4 = createA("#","");``
     createElement('br');
-	restart = createA("https://mlquadri.github.io/mlquadri.github.io/p5/index2.html#","");
+	restart = createA("https://mlquadri.github.io/mlquadri.github.io/p5/index2.html#","Try Agian");
 	//sideImage = createImg("image location");
 }
 
