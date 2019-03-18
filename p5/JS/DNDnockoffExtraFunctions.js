@@ -10,7 +10,7 @@ function preScene_nameAct(){
 function preScene_diceAct(){
 	print(diceButtonClicked)
 	if(diceButtonClicked < 4){
-		diceNum = rollDice();
+		diceNum = rollDice(0);
 		alert(diceNum);
 		//add num to an aray
 		diceButtonClicked+=1;
