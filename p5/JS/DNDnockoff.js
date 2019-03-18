@@ -12,26 +12,25 @@ var option2;
 var option3;
 var option4;
 var restart;
-var trueList;
-//sideImage;
 
-//input
-var slider;
+//screen Images;
+
+//inputs
 var nameInput;
 
 //global varables to be used on other files to
-var statAttack;
-var statDefence;
-var statCharm;
-var statStelth;
-var incentive = 2;
-var weapon = 0;
-var armor = 0;
-var shoes = 0;
-var charm = 0;
+int statAttack;
+int statDefence;
+int statCharm;
+int statStelth;
+int incentive = 2;
+int weapon = 0;
+int armor = 0;
+int shoes = 0;
+int charm = 0;
+int diceButtonClicked = 0;
+var dice = [0, 0, 0, 0];
 var nameEntered = true;
-var diceButtonClicked = 3;
-//var trueList[];
 
 function preload(){
     
@@ -85,7 +84,7 @@ function preScene(){
 
     //start game
     option1.html("Start game");
-    option1.mousePressed(Scene1);
+    option1.mousePressed(preScene_option1Act);
 }
 
 function Scene1(){
@@ -156,17 +155,18 @@ function Scene3_0(){
     createElement('br');
     option1.html("Fight (Attack)");
     createElement('br');
-    option2.html("Fight (deffend)");
+    option2.html("Fight (Deffend)");
     createElement('br');
-    option3.html("Try to talk past him (charm)");
+    option3.html("Try to talk past him (Charm)");
     createElement('br');
-    option4.html("Try to sneak back and go the other way(sneak)");
+    option4.html("Try to sneak past him(Sneak)");
     createElement('br');
 
     //user input
     option1.mousePressed(Scene3_0_option1Act);
     option2.mousePressed(Scene3_0_option2Act);
-    option3.mousePressed(Scene3_0_option3Act);
+    option3.mousePressed(sceneDeath);
+    option4.mousePressed(Scene3_0_option4Act);
 }
 
 function sceneDeath(){

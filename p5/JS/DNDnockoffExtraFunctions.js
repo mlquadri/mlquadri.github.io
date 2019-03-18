@@ -10,31 +10,57 @@ function preScene_nameAct(){
 function preScene_diceAct(){
 	print(diceButtonClicked)
 	if(diceButtonClicked < 4){
-		diceNum = rollDice(5);
+		diceList[diceButtonClicked] = rollDice(20);
 		alert(diceNum);
-		//add num to an aray
 		diceButtonClicked+=1;
 	}else{
 		print("Error: user tryed to roll dice an extra time - request denied")
+		alert("You can only roll 4 times")
 	}
 }
 function preScene_defInputAct(){
 	statDefence = int(defInput.value());
-	print(statDefence, (statDefence == int(statDefence)) );
-	//truelist+=true
 }
 function preScene_sneakInputAct(){
 	statStelth = int(sneakInput.value());
-	//truelist+=true
 	}
 function preScene_attackInputAct(){
 	statAttack = int(attackInput.value());
-	//truelist+=true
 }
 function preScene_charmInputAct(){
 	statCrisma = int(charmInput.value());
-	//truelist+=true
 }
+
+preScene_option1Act(){
+	if( (diceButtonClicked >= 4){
+		trueList = [false, false, false, false];
+		statList = [statDefence, statStelth, statAttack, statCrisma];
+		for (int i = 0; i < 4; i++){
+			if(diceList[i] == statList[0]){
+				trueList[i] = true;
+				statList[0] = -99;
+			}elif(diceList[i] == statList[1]){
+				trueList[i] = true;
+				statList[1] = -99;
+			}elif(diceList[i] == statList[2]){
+				trueList[i] = true;
+				statList[2] = -99;
+			}elif(diceList[i] == statList[3]){
+				trueList[i] = true;
+				statList[3] = -99;
+			}else{
+				print("Error: Inputed values do not equal rolled numbers: "+(diceList[i])+" not found");
+				alert( (diceList[i])+" was not rolled, please only use the number rolled: "+(diceList[0])+", "+(diceList[1])+", "+(diceList[2])+", "+(diceList[3]))
+			}
+		}
+		if( (trueList[0] == true) && (trueList[1] == true) && (trueList[2] == true) && (trueList[3] == true) ){
+			Scene1();
+		}else{
+			print("Error: can not continue to scene1, needs debuging");
+		}
+	}
+}
+
 function preScene_hide(){
 	nameInput.hide();
 	dice.hide();
@@ -109,13 +135,6 @@ function Scene3_0_option2Act(){
 	}else{
 		incentive-=1;
 		Scene3_0();
-	}
-}
-function Scene3_0_option3Act(){
-	if(checkStats(statCharm, 1)){
-		
-	}else{
-		sceneDeath();
 	}
 }
 function Scene3_0_option4Act(){
@@ -198,16 +217,16 @@ function checkStats(statType, level){
 				print("final check: passed");
 				return true;
 			}else{
-				print((statDefence+incentive+armor)+">"+level);
+				print("final check: failed: "+(statDefence+incentive+armor)+">"+level);
 				return false;
 			}
 		}else if(statType = "attac"){
 			print("statType (attac) check: passed");
-			if( (statAttack+incentive+weapon) > level){
+			if((statAttack+incentive+weapon) > level){
 				print("final check: passed");
 				return true;
 			}else{
-				print(statAttack+incentive+armor+">"+level);
+				print("final check: failed: "+(statAttack+incentive+armor)+">"+level);
 				return false;
 			}
 		}else if(statType = "sneak"){
@@ -216,7 +235,7 @@ function checkStats(statType, level){
 				print("final check: passed");
 				return true;
 			}else{
-				print(statStelth+incentive+armor+">"+level);
+				print("final check: failed: "+(statStelth+incentive+armor)+">"+level);
 				return false;
 			}
 		}else if(statType = "charm"){
@@ -225,7 +244,7 @@ function checkStats(statType, level){
 				print("final check: passed");
 				return true;
 			}else{
-				print(statCharm+incentive+armor+">"+level);
+				print("final check: failed: "+(statCharm+incentive+armor)+">"+level);
 				return false;
 			}
 		}else{
