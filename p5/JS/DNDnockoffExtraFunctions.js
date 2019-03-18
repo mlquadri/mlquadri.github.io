@@ -32,7 +32,7 @@ function preScene_charmInputAct(){
 }
 
 function preScene_option1Act(){
-	if( (diceButtonClicked >= 4) $$ (nameEntered) ){
+	if( (diceButtonClicked >= 4) && (nameEntered) ){
 		trueList = [false, false, false, false];
 		statList = [statDefence, statStelth, statAttack, statCrisma];
 		for (var i = 0; i < 4; i++){
