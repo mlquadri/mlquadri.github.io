@@ -6,11 +6,12 @@
 function preScene_nameAct(){
 	nameEntered = true;
 	userName = nameInput.value()
-	print(userName)
 }
 function preScene_diceAct(){
 	if(diceButtonClicked < 4){
-		rollDice();
+		diceNum = rollDice();
+		alert(diceNum);
+		//add num to an aray
 		diceButtonClicked+=1;
 	}else{
 		print("Error: user tryed to roll dice an extra time - request denied")
@@ -182,9 +183,7 @@ function randrange(maxInt, minInt){
 
 //dice rolled
 function rollDice(dNum){
-	num = randrange(0, dNum);
-	createP(num);
-	//add num to an aray
+	return randrange(0, dNum);
 }
 
 //CheckIncentive

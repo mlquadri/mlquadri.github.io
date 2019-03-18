@@ -30,7 +30,7 @@ var armor;
 var shoes;
 var charm;
 var nameEntered = true;
-var diceButtonClicked = 4;
+var diceButtonClicked = 3;
 //var trueList[];
 
 function preload(){
