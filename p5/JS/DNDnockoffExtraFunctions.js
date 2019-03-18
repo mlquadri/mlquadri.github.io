@@ -31,7 +31,7 @@ function preScene_charmInputAct(){
 	statCrisma = int(charmInput.value());
 }
 
-preScene_option1Act(){
+function preScene_option1Act(){
 	if( (diceButtonClicked >= 4){
 		trueList = [false, false, false, false];
 		statList = [statDefence, statStelth, statAttack, statCrisma];
