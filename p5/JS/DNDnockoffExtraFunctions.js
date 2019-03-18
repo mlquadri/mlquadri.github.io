@@ -25,17 +25,14 @@ function preScene_defInputAct(){
 }
 function preScene_sneakInputAct(){
 	statStelth = int(sneakInput.value());
-	print(statStelth);
 	//truelist+=true
 	}
 function preScene_attackInputAct(){
 	statAttack = int(attackInput.value());
-	print(statAttack);
 	//truelist+=true
 }
 function preScene_charmInputAct(){
 	statCrisma = int(charmInput.value());
-	print(statCrisma);
 	//truelist+=true
 }
 function preScene_hide(){
@@ -182,15 +179,11 @@ function randrange(maxInt, minInt){
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
-//dice rolled
-function rollDice(dNum){
-	return randrange(0, dNum);
-}
-
 //CheckIncentive
-function checkIncentive(){
-	return (incentive >= 0);
-}
+function checkIncentive(){return (incentive >= 0);}
+
+//dice rolled
+function rollDice(dNum){return randrange(0, dNum);}
 
 //CheckStats
 function checkStats(statType, level){
