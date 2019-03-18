@@ -65,7 +65,7 @@ function preScene_option1Act(){
 		print("Error: can not continue to scene1: didn't get 4 dice numbers \n diceButtonClicked = "+diceButtonClicked);
 		alert("Please get 4 dice numbers, so far youve rolled "+diceButtonClicked+" dices");
 	}else{
-		print("Error: can not continue to scene1 \n name ="+nameEntered+"/n diceButtonClicked = "+diceButtonClicked);
+		print("Error: can not continue to scene1 \n name = "+nameEntered+"\n diceButtonClicked = "+diceButtonClicked);
 	}
 }
 
