@@ -32,20 +32,20 @@ function preScene_charmInputAct(){
 }
 
 function preScene_option1Act(){
-	if( (diceButtonClicked >= 4){
+	if(diceButtonClicked >= 4){
 		trueList = [false, false, false, false];
 		statList = [statDefence, statStelth, statAttack, statCrisma];
-		for (int i = 0; i < 4; i++){
+		for (var i = 0; i < 4; i++){
 			if(diceList[i] == statList[0]){
 				trueList[i] = true;
 				statList[0] = -99;
-			}elif(diceList[i] == statList[1]){
+			}else if(diceList[i] == statList[1]){
 				trueList[i] = true;
 				statList[1] = -99;
-			}elif(diceList[i] == statList[2]){
+			}else if(diceList[i] == statList[2]){
 				trueList[i] = true;
 				statList[2] = -99;
-			}elif(diceList[i] == statList[3]){
+			}else if(diceList[i] == statList[3]){
 				trueList[i] = true;
 				statList[3] = -99;
 			}else{
