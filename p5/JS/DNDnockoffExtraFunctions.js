@@ -173,17 +173,17 @@ function setUpTags(){
 	//sideImage = createImg("image location");
 }
 
+//CheckIncentive
+function checkIncentive(){return (incentive >= 0);}
+
+//dice rolled
+function rollDice(dNum){return int(randrange(0, dNum));}
+
 function randrange(maxInt, minInt){
   min = Math.ceil(maxInt);
   max = Math.floor(minInt);
   return Math.floor(Math.random() * (max - min)) + min;
 }
-
-//CheckIncentive
-function checkIncentive(){return (incentive >= 0);}
-
-//dice rolled
-function rollDice(dNum){return randrange(0, dNum);}
 
 //CheckStats
 function checkStats(statType, level){
