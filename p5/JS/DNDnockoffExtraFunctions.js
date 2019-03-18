@@ -8,7 +8,7 @@ function preScene_nameAct(){
 	userName = nameInput.value()
 }
 function preScene_diceAct(){
-	print(diceButtonClicked)
+	print("Diced Roled "+diceButtonClicked+" times");
 	if(diceButtonClicked < 4){
 		diceList[diceButtonClicked] = rollDice(20);
 		alert(diceList[diceButtonClicked]);
