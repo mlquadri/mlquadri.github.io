@@ -196,7 +196,7 @@ function setUpTags(){
     createElement('br');
 	option4 = createA("#","");``
     createElement('br');
-	restart = createA("https://mlquadri.github.io/mlquadri.github.io/p5/index2.html#","Try Agian");
+	restart = createA("index2.html","Try Agian"); 
 	//sideImage = createImg("image location");
 }
 
