@@ -198,7 +198,7 @@ function checkStats(statType, level){
 				print("final check: passed");
 				return true;
 			}else{
-				print(statDefence+incentive+armor+">"+level);
+				print((statDefence+incentive+armor)+">"+level);
 				return false;
 			}
 		}else if(statType = "attac"){
