@@ -2,7 +2,6 @@
 /////////inner-Scene Functions/////////////
 ///////////////////////////////////////////
 
-
 ////////////////////////////////////////////////////////////preScene///////////////////////////////////////////////////////////
 function preScene_nameAct(){
 	nameEntered = true;
@@ -19,22 +18,22 @@ function preScene_diceAct(){
 }
 function preScene_defInputAct(){
 	statDefence = int(defInput.value());
-	print(statDefence)
+	print(statDefence, (statDefence == int(statDefence)) );
 	//truelist+=true
 }
 function preScene_sneakInputAct(){
 	statStelth = int(sneakInput.value());
-	print(statStelth)
+	print(statStelth);
 	//truelist+=true
 	}
 function preScene_attackInputAct(){
 	statAttack = int(attackInput.value());
-	print(statAttack)
+	print(statAttack);
 	//truelist+=true
 }
 function preScene_charmInputAct(){
 	statCrisma = int(charmInput.value());
-	print(statCrisma)
+	print(statCrisma);
 	//truelist+=true
 }
 function preScene_hide(){
