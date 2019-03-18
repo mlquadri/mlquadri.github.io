@@ -19,16 +19,16 @@ var restart;
 var nameInput;
 
 //global varables to be used on other files to
-int statAttack;
-int statDefence;
-int statCharm;
-int statStelth;
-int incentive = 2;
-int weapon = 0;
-int armor = 0;
-int shoes = 0;
-int charm = 0;
-int diceButtonClicked = 0;
+var statAttack;
+var statDefence;
+var statCharm;
+var statStelth;
+var incentive = 2;
+var weapon = 0;
+var armor = 0;
+var shoes = 0;
+var charm = 0;
+var diceButtonClicked = 0;
 var dice = [0, 0, 0, 0];
 var nameEntered = true;
 
