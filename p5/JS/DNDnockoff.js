@@ -27,6 +27,7 @@ var statAttack = -99;
 var statDefence = -99;
 var statCharm = -99;
 var statStelth = -99;
+var startingStatCap = 20;
 var incentive = 2;
 var weapon = 0;
 var armor = 0;
@@ -88,7 +89,7 @@ function preScene(){
     attackInput.style("placeholder", "Enter attack stat");
     charmInput.style("placeholder", "Enter charm stat");
     sneakInput.style("placeholder", "Enter sneak stat");
-    randomStats..html("Random Stats");
+    randomStats.html("Random Stats");
     randomStats.mousePressed(preScene_randomStatsAct);
     defInput.changed(preScene_defInputAct);
     attackInput.changed(preScene_attackInputAct);

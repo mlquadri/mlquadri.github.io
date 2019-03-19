@@ -8,9 +8,8 @@ function preScene_nameAct(){
 	userName = nameInput.value()
 }
 function preScene_diceAct(){
-	statCap = 20;
 	if(diceButtonClicked < 4){
-		diceList[diceButtonClicked] = rollDice(statCap);
+		diceList[diceButtonClicked] = rollDice(startingStatCap);
 		print("Diced Rolled "+(diceButtonClicked+1)+" times and you got a "+diceList[diceButtonClicked]+" on the last roll");
 		alert(diceList[diceButtonClicked]);
 		diceButtonClicked+=1;
@@ -20,19 +19,22 @@ function preScene_diceAct(){
 	}
 }
 function preScene_randomStatsAct(){
-	statDefence = rollDice(statCap);
-	statStelth = rollDice(statCap);
-	statAttack = rollDice(statCap);
-	statCharm = rollDice(statCap);
+	statDefence = rollDice(startingStatCap);
+	statStelth = rollDice(startingStatCap);
+	statAttack = rollDice(startingStatCap);
+	statCharm = rollDice(startingStatCap);
+	diceButtonClicked = 4;
 	diceList[0] = statDefence;
 	diceList[1] = statStelth;
 	diceList[2] = statAttack;
 	diceList[3] = statCharm;
+	randomStats.hide();
 	dice.hide();
 	defInput.hide();
 	attackInput.hide();
 	charmInput.hide();
 	sneakInput.hide();
+	print("Attack: "+statAttack+"\nDefence: "+statDefence+"\nCharm: "+statCharm+"\nSneak: "+statStelth);
 }
 function preScene_defInputAct(){
 	statDefence = int(defInput.value());
