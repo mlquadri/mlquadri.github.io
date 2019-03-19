@@ -27,7 +27,7 @@ var weapon = 0;
 var armor = 0;
 var shoes = 0;
 var charm = 0;
-var gold = randrange(0, 10);
+var gold = 0;
 var diceButtonClicked = 0;
 var diceList = [0, 0, 0, 0];
 var nameEntered = false;
@@ -42,6 +42,7 @@ function setup() {
     canvas.position(0,0);
     canvas.style('z-index', '-1');
     setUpTags();
+    gold = randrange(0, 10);
     preScene();
 }
 
@@ -176,4 +177,5 @@ function sceneDeath(){
     createElement('br');
     screenBody.html("A traveling bard found you with: "+gold+" peace of gold");
     restart.html("Try Agian");
+    restart.show();
 }

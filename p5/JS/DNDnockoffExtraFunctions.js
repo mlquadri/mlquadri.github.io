@@ -197,6 +197,7 @@ function setUpTags(){
 	option4 = createA("#","");``
     createElement('br');
 	restart = createA("index2.html","Try Agian"); 
+	restart.hide();
 	//sideImage = createImg("image location");
 }
 
