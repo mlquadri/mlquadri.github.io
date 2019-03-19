@@ -13,7 +13,12 @@ var option4;
 var restart;
 
 //screen Images;
-
+var preScene_image;
+var Scene1_image;
+var Scene2_0_image;
+var Scene2_1_image;
+var Scene3_0_image;
+var sceneDeath_image;
 //inputs
 var nameInput;
 
@@ -33,7 +38,12 @@ var diceList = [0, 0, 0, 0];
 var nameEntered = false;
 
 function preload(){
-    
+    preScene_image;
+    Scene1_image;
+    Scene2_0_image;
+    Scene2_1_image;
+    Scene3_0_image;
+    sceneDeath_image;
 }
 
 function setup() {
@@ -78,6 +88,8 @@ function preScene(){
     attackInput.style("placeholder", "Enter attack stat");
     charmInput.style("placeholder", "Enter charm stat");
     sneakInput.style("placeholder", "Enter sneak stat");
+    randomStats..html("Random Stats");
+    randomStats.mousePressed(preScene_randomStatsAct);
     defInput.changed(preScene_defInputAct);
     attackInput.changed(preScene_attackInputAct);
     charmInput.changed(preScene_charmInputAct);

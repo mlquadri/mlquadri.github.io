@@ -8,8 +8,9 @@ function preScene_nameAct(){
 	userName = nameInput.value()
 }
 function preScene_diceAct(){
+	statCap = 20;
 	if(diceButtonClicked < 4){
-		diceList[diceButtonClicked] = rollDice(20);
+		diceList[diceButtonClicked] = rollDice(statCap);
 		print("Diced Rolled "+(diceButtonClicked+1)+" times and you got a "+diceList[diceButtonClicked]+" on the last roll");
 		alert(diceList[diceButtonClicked]);
 		diceButtonClicked+=1;
@@ -17,6 +18,21 @@ function preScene_diceAct(){
 		print("Error: user tryed to roll dice an extra time: request denied")
 		alert("You can only roll 4 times")
 	}
+}
+function preScene_randomStatsAct(){
+	statDefence = rollDice(statCap);
+	statStelth = rollDice(statCap);
+	statAttack = rollDice(statCap);
+	statCharm = rollDice(statCap);
+	diceList[0] = statDefence;
+	diceList[1] = statStelth;
+	diceList[2] = statAttack;
+	diceList[3] = statCharm;
+	dice.hide();
+	defInput.hide();
+	attackInput.hide();
+	charmInput.hide();
+	sneakInput.hide();
 }
 function preScene_defInputAct(){
 	statDefence = int(defInput.value());
@@ -187,6 +203,8 @@ function setUpTags(){
     charmInput = createInput();
     createElement('br');
     sneakInput = createInput();
+    createElement('br');
+    randomStats = createA("#","");
     createElement('br');
 	option1 = createA("#","");
     createElement('br');
