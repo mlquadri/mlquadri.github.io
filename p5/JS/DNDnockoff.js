@@ -34,6 +34,7 @@ var armor = 0;
 var shoes = 0;
 var charm = 0;
 var gold = 0;
+var price = 0;
 var diceButtonClicked = 0;
 var diceList = [0, 0, 0, 0];
 var nameEntered = false;
@@ -54,6 +55,7 @@ function setup() {
     canvas.style('z-index', '-1');
     setUpTags();
     gold = randrange(0, 10);
+    print("player started with "+gold+" gold")
     preScene();
 }
 
@@ -68,13 +70,12 @@ function windowResized(){
 ////////////////////////////////////
 ///////scene functions////////
 ////////////////////////////////////
-
 function preScene(){
     background(0);
 
     //title and text
     title.html("Enter the stuffies");
-    screenBody.html("Enter your carecter name and stats. As the game progresses you will be able to succeed in action depending on how high your related stat (or stats) are. Also you will be able to rase your stats in game by gaining equipment. Finaly be warned that by failing encounters you can lower your chance at the next one");
+    screenBody.html("Enter your name and stats. As the game progresses you will be able to succeed in action depending on how high your related stat (or stats) are. Also you will be able to rase your stats in game by gaining equipment. Finaly be warned that by failing encounters you can lower your chance at the next one");
     
     //name input
     nameInput.style("placeholder", "Enter Name");
@@ -104,6 +105,7 @@ function preScene(){
 function Scene1(){
     preScene_hide()
     background(0);
+    price = 2;
     title.html(userName + ", Title");
     createElement('br');
     screenBody.html("2 paths");
@@ -122,7 +124,7 @@ function Scene2_0(){
     background(0);
     title.html(userName + ", You see a merchant");
     createElement('br');
-    screenBody.html("He will sale you a sword, cottorn armor, or boots.");
+    screenBody.html("He will sale you a sword, cottorn armor, or boots for "+price+" gold");
     createElement('br');
     option1.html("Sword (Attack)");
     createElement('br');
@@ -181,6 +183,55 @@ function Scene3_0(){
     option2.mousePressed(Scene3_0_option2Act);
     option3.mousePressed(sceneDeath);
     option4.mousePressed(Scene3_0_option4Act);
+}
+
+function Scene4_0(){
+    background(0);
+    title.html(nameInput.value() + ", You see a bunch of knights fighting");
+    createElement('br');
+    screenBody.html("red = pay money but bad men. blue = good but poor. ");
+    createElement('br');
+    option1.html("Fight the Red (Attack)");
+    createElement('br');
+    option2.html("Fight the blue (Deffend)");
+    createElement('br');
+    option3.html("Try to negociat peace (Charm)");
+    createElement('br');
+    option4.html("Try to sneak past them(Sneak)");
+    createElement('br');
+
+    //user input
+    option1.mousePressed(Scene4_0_option1Act);
+    option2.mousePressed(Scene4_0_option2Act);
+    option3.mousePressed(Scene4_0_option3Act);
+    option4.mousePressed(Scene4_0_option4Act);
+}
+function Scene5_0(){
+    background(0);
+    sceneDeath_hide();
+    title.html("The End");
+    createElement('br');
+    screenBody.html("You win, you die of old age with "+(gold*10)+" piece of gold while being hated by many");
+}
+function Scene5_1(){
+    background(0);
+    sceneDeath_hide();
+    title.html("The End");
+    createElement('br');
+    screenBody.html("You win, you die of old age with "+(gold*10)+" piece of gold while being loved by many");
+function Scene5_2(){
+    background(0);
+    sceneDeath_hide();
+    title.html("The End");
+    createElement('br');
+    screenBody.html("You win, you die of old age with "+(gold*10)+" piece of gold while being loved by all");
+}
+function Scene5_3(){
+    background(0);
+    sceneDeath_hide();
+    title.html("The End");
+    createElement('br');
+    screenBody.html("You win, you die of old age with "+(gold*10)+" piece of gold while being unknown by all");
 }
 
 function sceneDeath(){

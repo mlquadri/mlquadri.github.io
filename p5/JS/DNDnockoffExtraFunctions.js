@@ -10,7 +10,7 @@ function preScene_nameAct(){
 function preScene_diceAct(){
 	if(diceButtonClicked < 4){
 		diceList[diceButtonClicked] = rollDice(startingStatCap);
-		print("Diced Rolled "+(diceButtonClicked+1)+" times and you got a "+diceList[diceButtonClicked]+" on the last roll");
+		print("roll exepted: "+diceList[diceButtonClicked]+" returned \n"+(3 - (diceButtonClicked))+" rolls left");
 		alert(diceList[diceButtonClicked]);
 		diceButtonClicked+=1;
 	}else{
@@ -36,19 +36,10 @@ function preScene_randomStatsAct(){
 	sneakInput.hide();
 	print("Attack: "+statAttack+"\nDefence: "+statDefence+"\nCharm: "+statCharm+"\nSneak: "+statStelth);
 }
-function preScene_defInputAct(){
-	statDefence = int(defInput.value());
-}
-function preScene_sneakInputAct(){
-	statStelth = int(sneakInput.value());
-	}
-function preScene_attackInputAct(){
-	statAttack = int(attackInput.value());
-}
-function preScene_charmInputAct(){
-	statCharm = int(charmInput.value());
-}
-
+function preScene_defInputAct(){statDefence = int(defInput.value());}
+function preScene_sneakInputAct(){statStelth = int(sneakInput.value());}
+function preScene_attackInputAct(){statAttack = int(attackInput.value());}
+function preScene_charmInputAct(){statCharm = int(charmInput.value());}
 function preScene_option1Act(){
 	if( (diceButtonClicked >= 4) && (nameEntered) ){
 		trueList = [false, false, false, false];
@@ -68,7 +59,8 @@ function preScene_option1Act(){
 				statList[3] = -99;
 			}else{
 				print("Error: Inputed values do not equal rolled numbers: "+(diceList[i])+" not found");
-				alert( "A non-rolled was used, please only use the number rolled: "+(diceList[0])+", "+(diceList[1])+", "+(diceList[2])+", "+(diceList[3]))
+				alert( "Please only use numbers you've rolled, or press the Random Stats buttons. So far you've rolled: "+(diceList[0])+", "+(diceList[1])+", "+(diceList[2])+", "+(diceList[3]))
+				return;
 			}
 		}
 		if( (trueList[0] == true) && (trueList[1] == true) && (trueList[2] == true) && (trueList[3] == true) ){
@@ -77,13 +69,14 @@ function preScene_option1Act(){
 			print("Error: can not continue to scene1");
 		}
 	}else if(nameEntered){
-		print("Error: can not continue to scene1: didn't get 4 dice numbers \n diceButtonClicked = "+diceButtonClicked);
-		alert("Please get 4 dice numbers, so far youve rolled "+diceButtonClicked+" dices");
+		print("Error: can not continue to scene1: didn't get 4 dice numbers \ndiceButtonClicked = "+diceButtonClicked);
+		alert("Please roll 4 dice or click the Random Stat button, so far youve rolled "+diceButtonClicked+" dices");
 	}else if(diceButtonClicked >= 4){
-		print("Error: can not continue to scene1: no name name entered \n name ="+nameEntered);
-		alert("Please enter a Name");
+		print("Error: can not continue to scene1: no name entered \nname ="+nameEntered);
+		alert("Please enter a name");
 	}else{
-		print("Error: can not continue to scene1 \n name = "+nameEntered+"\n diceButtonClicked = "+diceButtonClicked);
+		print("Error: can not continue to scene1: didn't get 4 dice numbers and no name entered\nname = "+nameEntered+"\ndiceButtonClicked = "+diceButtonClicked);
+		alert("Please enter a name and Stats");
 	}
 }
 
@@ -94,36 +87,70 @@ function preScene_hide(){
 	attackInput.hide();
 	charmInput.hide();
 	sneakInput.hide();
+	randomStats.hide();
 }
 
 ///////////////////////////////////////////////////////////////Scene2_0///////////////////////////////////////////////////////////////
 function Scene2_0_option1Act(){
-	Scene3_0();
+	if(gold >= price){
+		gold -= price;
+		weapon += 1;
+		alert("You gained a weapon");
+		print("weapon = "+weapon+"\ngold = "+gold);
+		Scene3_0();
+	}else{
+		alert("You only have "+gold+" gold so the merchent left");
+		Scene3_0();
+	}
 }
 function Scene2_0_option2Act(){
-	Scene3_0();
+	if(gold >= price){
+		gold -= price;
+		armor += 1;
+		alert("You gained armor"+"\ngold = "+gold);
+		print("armor = "+armor);
+		Scene3_0();
+	}else{
+		alert("You only have "+gold+" gold");
+		Scene3_0();
+	}
 }
 function Scene2_0_option3Act(){
-	Scene3_0();
+	if(gold >= price){
+		gold -= price;
+		shoes += 1;
+		alert("You gained thief shoes");
+		print("shoes = "+shoes+"\ngold = "+gold);
+		Scene3_0();
+	}else{
+		alert("You only have "+gold+" gold");
+		Scene3_0();
+	}
 }
 function Scene2_0_option4Act(){
-	if(checkStats(statCharm, 1)){
+	if(checkStats(slkdjkljsdklj, 1)){
+		price -= 1;
+		alert("You talked down the price");
+		print("price = "+price+"\ngold = "+gold);
 		Scene2_0();
 	}else{
+		price += 1;
+		alert("You annoyed the merchent and he rased the price by 1 gold");
+		print("price = "+price+"\ngold = "+gold);
 		Scene2_0();
 	}
 }
 
 ///////////////////////////////////////////////////////////////Scene2_1///////////////////////////////////////////////////////////////
 function Scene2_1_option1Act(){
-	if(checkStats(statAttack, 1)){
+	if(checkStats("attack", 1)){
 		Scene3_0()
 	}else{
 		sceneDeath();
 	}
 }
 function Scene2_1_option2Act(){
-	if(checkStats(statDefence, 1)){
+	if(checkStats("def", 1)){
 		incentive+=1;
 		Scene2_1()
 	}else{
@@ -132,14 +159,14 @@ function Scene2_1_option2Act(){
 	}
 }
 function Scene2_1_option3Act(){
-	if(checkStats(statCharm, 1)){
+	if(checkStats("charm", 1)){
 		Scene3_0();
 	}else{
 		sceneDeath();
 	}
 }
 function Scene2_1_option4Act(){
-	if(checkStats(statStelth, 1)){
+	if(checkStats("sneak", 1)){
 		Scene1();
 	}else{
 		sceneDeath();
@@ -148,14 +175,14 @@ function Scene2_1_option4Act(){
 
 ///////////////////////////////////////////////////////////////Scene3_0///////////////////////////////////////////////////////////////
 function Scene3_0_option1Act(){
-	if(checkStats(statAttack, 1)){
+	if(checkStats("attack", 1)){
 		
 	}else{
 		sceneDeath();
 	}
 }
 function Scene3_0_option2Act(){
-	if(checkStats(statDefence, 1)){
+	if(checkStats("def", 1)){
 		incentive+=1;
 		Scene3_0();
 	}else{
@@ -164,10 +191,40 @@ function Scene3_0_option2Act(){
 	}
 }
 function Scene3_0_option4Act(){
-	if(checkStats(statStelth, 1)){
+	if(checkStats("sneak", 1)){
 		
 	}else{
 		
+	}
+}
+
+///////////////////////////////////////////////////////////////Scene4_0///////////////////////////////////////////////////////////////
+function Scene4_0_option1Act(){
+	if(checkStats("attack", 1)){
+		Scene5_0()
+	}else{
+		sceneDeath();
+	}
+}
+function Scene4_0_option2Act(){
+	if(checkStats("attack", 1)){
+		Scene5_1()
+	}else{
+		sceneDeath();
+	}
+}
+function Scene4_0_option3Act(){
+	if(checkStats("charm", 1)){
+		Scene5_2()
+	}else{
+		sceneDeath();
+	}
+}
+function Scene4_0_option4Act(){
+	if(checkStats("sneak", 1)){
+		Scene5_3()
+	}else{
+		sceneDeath();
 	}
 }
 
@@ -184,6 +241,7 @@ function sceneDeath_hide(){
 	option3.hide();
 	option4.hide();
 }
+
 
 ///////////////////////////////////////////
 //////////Non-Scene Functions//////////////
@@ -249,7 +307,7 @@ function checkStats(statType, level){
 				print("final check: failed: "+(statDefence+incentive+armor)+">"+level);
 				return false;
 			}
-		}else if(statType = "attac"){
+		}else if(statType = "attack"){
 			print("statType (attac) check: passed");
 			if((statAttack+incentive+weapon) > level){
 				print("final check: passed");
