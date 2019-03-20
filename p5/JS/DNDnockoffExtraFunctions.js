@@ -72,7 +72,7 @@ function preScene_option1Act(){
 		print("Error: can not continue to scene1: didn't get 4 dice numbers \ndiceButtonClicked = "+diceButtonClicked);
 		alert("Please roll 4 dice or click the Random Stat button, so far youve rolled "+diceButtonClicked+" dices");
 	}else if(diceButtonClicked >= 4){
-		print("Error: can not continue to scene1: no name entered \nname ="+nameEntered);
+		print("Error: can not continue to scene1: no name entered \nname = "+nameEntered);
 		alert("Please enter a name");
 	}else{
 		print("Error: can not continue to scene1: didn't get 4 dice numbers and no name entered\nname = "+nameEntered+"\ndiceButtonClicked = "+diceButtonClicked);
