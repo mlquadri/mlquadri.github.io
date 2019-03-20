@@ -128,7 +128,7 @@ function Scene2_0_option3Act(){
 	}
 }
 function Scene2_0_option4Act(){
-	if(checkStats(slkdjkljsdklj, 1)){
+	if(checkStats("charm", (1 * difficultyMultiplyer))){
 		price -= 1;
 		alert("You talked down the price");
 		print("price = "+price+"\ngold = "+gold);
@@ -143,14 +143,14 @@ function Scene2_0_option4Act(){
 
 ///////////////////////////////////////////////////////////////Scene2_1///////////////////////////////////////////////////////////////
 function Scene2_1_option1Act(){
-	if(checkStats("attack", 1)){
+	if(checkStats("attack", (1 * difficultyMultiplyer))){
 		Scene3_0()
 	}else{
 		sceneDeath();
 	}
 }
 function Scene2_1_option2Act(){
-	if(checkStats("def", 1)){
+	if(checkStats("def", (1 * difficultyMultiplyer))){
 		incentive+=1;
 		Scene2_1()
 	}else{
@@ -159,14 +159,14 @@ function Scene2_1_option2Act(){
 	}
 }
 function Scene2_1_option3Act(){
-	if(checkStats("charm", 1)){
+	if(checkStats("charm", (1 * difficultyMultiplyer))){
 		Scene3_0();
 	}else{
 		sceneDeath();
 	}
 }
 function Scene2_1_option4Act(){
-	if(checkStats("sneak", 1)){
+	if(checkStats("sneak", (1 * difficultyMultiplyer))){
 		Scene1();
 	}else{
 		sceneDeath();
@@ -175,14 +175,14 @@ function Scene2_1_option4Act(){
 
 ///////////////////////////////////////////////////////////////Scene3_0///////////////////////////////////////////////////////////////
 function Scene3_0_option1Act(){
-	if(checkStats("attack", 1)){
-		
+	if(checkStats("attack", (3 * difficultyMultiplyer))){
+		Scene4_0();
 	}else{
 		sceneDeath();
 	}
 }
 function Scene3_0_option2Act(){
-	if(checkStats("def", 1)){
+	if(checkStats("def", (3 * difficultyMultiplyer))){
 		incentive+=1;
 		Scene3_0();
 	}else{
@@ -191,8 +191,8 @@ function Scene3_0_option2Act(){
 	}
 }
 function Scene3_0_option4Act(){
-	if(checkStats("sneak", 1)){
-		
+	if(checkStats("sneak", (3 * difficultyMultiplyer))){
+		Scene4_0();
 	}else{
 		
 	}
@@ -200,28 +200,28 @@ function Scene3_0_option4Act(){
 
 ///////////////////////////////////////////////////////////////Scene4_0///////////////////////////////////////////////////////////////
 function Scene4_0_option1Act(){
-	if(checkStats("attack", 1)){
+	if(checkStats("attack", (5 * difficultyMultiplyer))){
 		Scene5_0()
 	}else{
 		sceneDeath();
 	}
 }
 function Scene4_0_option2Act(){
-	if(checkStats("attack", 1)){
+	if(checkStats("attack", (5 * difficultyMultiplyer))){
 		Scene5_1()
 	}else{
 		sceneDeath();
 	}
 }
 function Scene4_0_option3Act(){
-	if(checkStats("charm", 1)){
+	if(checkStats("charm", (8 * difficultyMultiplyer))){
 		Scene5_2()
 	}else{
 		sceneDeath();
 	}
 }
 function Scene4_0_option4Act(){
-	if(checkStats("sneak", 1)){
+	if(checkStats("sneak", (5 * difficultyMultiplyer))){
 		Scene5_3()
 	}else{
 		sceneDeath();
@@ -298,7 +298,7 @@ function randrange(maxInt, minInt){
 function checkStats(statType, level){
 	if(incentive > 0){
 		print("incentive check: passed");
-		if(statType = "def"){
+		if(statType == "def"){
 			print("statType (def) check: passed");
 			if( (statDefence+incentive+armor) > level){
 				print("final check: passed");
@@ -307,7 +307,7 @@ function checkStats(statType, level){
 				print("final check: failed: "+(statDefence+incentive+armor)+">"+level);
 				return false;
 			}
-		}else if(statType = "attack"){
+		}else if(statType == "attack"){
 			print("statType (attac) check: passed");
 			if((statAttack+incentive+weapon) > level){
 				print("final check: passed");
@@ -316,7 +316,7 @@ function checkStats(statType, level){
 				print("final check: failed: "+(statAttack+incentive+armor)+">"+level);
 				return false;
 			}
-		}else if(statType = "sneak"){
+		}else if(statType == "sneak"){
 			print("incentive (sneak) check: passed");
 			if( (statStelth+incentive+shoes) > level){
 				print("final check: passed");
@@ -325,7 +325,7 @@ function checkStats(statType, level){
 				print("final check: failed: "+(statStelth+incentive+armor)+">"+level);
 				return false;
 			}
-		}else if(statType = "charm"){
+		}else if(statType == "charm"){
 			print("incentive (charm) check: passed");
 			if( (statCharm+incentive+charm) > level){
 				print("final check: passed");
@@ -341,25 +341,25 @@ function checkStats(statType, level){
 	}else if(randrange(0, 1) == 1){
 		print("incentive check: failed");
 		print("random check: passed");
-		if(statType = "def"){
+		if(statType == "def"){
 			if( (statDefence+armor) > level){
 				return true;
 			}else{
 				return false;
 			}
-		}else if(statType = "attac"){
+		}else if(statType == "attac"){
 			if( (statAttack+weapon) > level){
 				return true;
 			}else{
 				return false;
 			}
-		}else if(statType = "sneak"){
+		}else if(statType == "sneak"){
 			if( (statStelth+shoes) > level){
 				return true;
 			}else{
 				return false;
 			}
-		}else if(statType = "charm"){
+		}else if(statType == "charm"){
 			if( (statCharm+charm) > level){
 				return true;
 			}else{

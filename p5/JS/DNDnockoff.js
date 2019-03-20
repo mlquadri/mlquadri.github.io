@@ -38,6 +38,7 @@ var price = 0;
 var diceButtonClicked = 0;
 var diceList = [0, 0, 0, 0];
 var nameEntered = false;
+var difficultyMultiplyer = 1;
 
 function preload(){
     preScene_image;
@@ -219,6 +220,7 @@ function Scene5_1(){
     title.html("The End");
     createElement('br');
     screenBody.html("You win, you die of old age with "+(gold*10)+" piece of gold while being loved by many");
+}
 function Scene5_2(){
     background(0);
     sceneDeath_hide();
