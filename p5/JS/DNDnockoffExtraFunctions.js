@@ -40,7 +40,11 @@ function preScene_defInputAct(){statDefence = int(defInput.value());}
 function preScene_sneakInputAct(){statStelth = int(sneakInput.value());}
 function preScene_attackInputAct(){statAttack = int(attackInput.value());}
 function preScene_charmInputAct(){statCharm = int(charmInput.value());}
+function preScene_difficultyMultiplyerSliderAct(){difficultyMultiplyer = int(difficultyMultiplyerSlider.value());}
 function preScene_option1Act(){
+	if( !(difficultyMultiplyer > 0) ){
+		difficultyMultiplyer = 1
+	}
 	if( (diceButtonClicked >= 4) && (nameEntered) ){
 		trueList = [false, false, false, false];
 		statList = [statDefence, statStelth, statAttack, statCharm];
@@ -88,6 +92,7 @@ function preScene_hide(){
 	charmInput.hide();
 	sneakInput.hide();
 	randomStats.hide();
+	difficultyMultiplyerSlider.hide();
 }
 
 ///////////////////////////////////////////////////////////////Scene2_0///////////////////////////////////////////////////////////////
@@ -271,17 +276,18 @@ function setUpTags(){
     createElement('br');
     randomStats = createA("#","");
     createElement('br');
+	difficultyMultiplyerSlider = createInput();
+    createElement('br');
 	option1 = createA("#","");
     createElement('br');
 	option2 = createA("#","");
     createElement('br');
 	option3 = createA("#","");
     createElement('br');
-	option4 = createA("#","");``
+	option4 = createA("#","");
     createElement('br');
 	restart = createA("index2.html","Try Agian"); 
 	restart.hide();
-	//sideImage = createImg("image location");
 }
 
 //CheckIncentive

@@ -6,6 +6,7 @@ var title;
 var screenBody;
 var userName = "";
 var dice;
+var difficultyMultiplyerSlider;
 var option1;
 var option2;
 var option3;
@@ -57,6 +58,7 @@ function setup() {
     setUpTags();
     gold = randrange(0, 10);
     print("player started with "+gold+" gold")
+    alert("You start with "+gold+" gold")
     preScene();
 }
 
@@ -91,12 +93,14 @@ function preScene(){
     attackInput.style("placeholder", "Enter attack stat");
     charmInput.style("placeholder", "Enter charm stat");
     sneakInput.style("placeholder", "Enter sneak stat");
+    difficultyMultiplyerSlider.style("placeholder", "Difficulty");
     randomStats.html("Random Stats");
     randomStats.mousePressed(preScene_randomStatsAct);
     defInput.changed(preScene_defInputAct);
     attackInput.changed(preScene_attackInputAct);
     charmInput.changed(preScene_charmInputAct);
     sneakInput.changed(preScene_sneakInputAct);
+    difficultyMultiplyerSlider.changed(preScene_difficultyMultiplyerSliderAct);
 
     //start game
     option1.html("Start game");
@@ -104,7 +108,9 @@ function preScene(){
 }
 
 function Scene1(){
-    preScene_hide()
+    preScene_hide();
+    option3.hide();
+    option4.hide();
     background(0);
     price = 2;
     title.html(userName + ", Title");
@@ -123,17 +129,19 @@ function Scene1(){
 
 function Scene2_0(){
     background(0);
+    option3.show();
+    option4.show();
     title.html(userName + ", You see a merchant");
     createElement('br');
     screenBody.html("He will sale you eather an iron sword, leather armor, or stealth boots for "+price+" gold");
     createElement('br');
-    option1.html("Sword (Attack)");
+    option1.html("Iron Sword (Attack)");
     createElement('br');
-    option2.html("Cotton armor (deffend)");
+    option2.html("Leather armor (deffend)");
     createElement('br');
-    option3.html("boots (steath)");
+    option3.html("Thief Boots (steath)");
     createElement('br');
-    option4.html("try to sweet talk beter prices (charm)");
+    option4.html("Try to sweet talk beter prices (charm)");
     createElement('br');
 
     //user input
@@ -145,15 +153,17 @@ function Scene2_0(){
 
 function Scene2_1(){
     background(0);
+    option3.show();
+    option4.show();
     title.html("Sneak Attack");
     createElement('br');
-    screenBody.html("You see a bandit");
+    screenBody.html("You see a hiding bandit trying to ambush travelers on the road");
     createElement('br');
-    option1.html("Fight (Attack)");
+    option1.html("Attack him (Attack)");
     createElement('br');
-    option2.html("Fight (deffend)");
+    option2.html("Fight (Deffend)");
     createElement('br');
-    option3.html("Try to talk past him (charm)");
+    option3.html("Try to talk your way past him (charm)");
     createElement('br');
     option4.html("Try to sneak back and go the other way(sneak)");
     createElement('br');
@@ -166,15 +176,15 @@ function Scene2_1(){
 }
 function Scene3_0(){
     background(0);
-    title.html(nameInput.value() + ", Bear");
+    title.html(nameInput.value() + "Bear");
     createElement('br');
-    screenBody.html("You see a bear");
+    screenBody.html("You see a angry bear");
     createElement('br');
-    option1.html("Fight (Attack)");
+    option1.html("Attack him (Attack)");
     createElement('br');
     option2.html("Fight (Deffend)");
     createElement('br');
-    option3.html("Try to talk past him (Charm)");
+    option3.html("Try to become a bear whisperer (Charm)");
     createElement('br');
     option4.html("Try to sneak past him(Sneak)");
     createElement('br');
@@ -188,13 +198,13 @@ function Scene3_0(){
 
 function Scene4_0(){
     background(0);
-    title.html(nameInput.value() + ", You see a bunch of knights fighting");
+    title.html(nameInput.value() + "You see a bunch of knights fighting");
     createElement('br');
-    screenBody.html("red = pay money but bad men. blue = good but poor. ");
+    screenBody.html("There is the red army, a bunch of rich lords who are infamous for there opresion of the weak. They are fighting the blue knight, a groop of commoners that are famous for defending the weak.");
     createElement('br');
     option1.html("Fight the Red (Attack)");
     createElement('br');
-    option2.html("Fight the blue (Deffend)");
+    option2.html("Fight the blue (Attack)");
     createElement('br');
     option3.html("Try to negociat peace (Charm)");
     createElement('br');
