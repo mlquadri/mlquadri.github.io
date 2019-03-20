@@ -125,7 +125,7 @@ function Scene2_0(){
     background(0);
     title.html(userName + ", You see a merchant");
     createElement('br');
-    screenBody.html("He will sale you a sword, cottorn armor, or boots for "+price+" gold");
+    screenBody.html("He will sale you eather an iron sword, leather armor, or stealth boots for "+price+" gold");
     createElement('br');
     option1.html("Sword (Attack)");
     createElement('br');
@@ -145,7 +145,7 @@ function Scene2_0(){
 
 function Scene2_1(){
     background(0);
-    title.html(nameInput.value() + ", Title");
+    title.html("Sneak Attack");
     createElement('br');
     screenBody.html("You see a bandit");
     createElement('br');

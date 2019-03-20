@@ -128,7 +128,7 @@ function Scene2_0_option3Act(){
 	}
 }
 function Scene2_0_option4Act(){
-	if(checkStats("charm", (1 * difficultyMultiplyer))){
+	if( (checkStats("charm", (1 * difficultyMultiplyer)))&&(price > 0) ){
 		price -= 1;
 		alert("You talked down the price");
 		print("price = "+price+"\ngold = "+gold);
@@ -160,6 +160,11 @@ function Scene2_1_option2Act(){
 }
 function Scene2_1_option3Act(){
 	if(checkStats("charm", (1 * difficultyMultiplyer))){
+		if(gold >= difficultyMultiplyer){
+			gold -= difficultyMultiplyer;
+			print("gold = "+gold)
+			alert("You talked the bandit in to leting you go, but it cost you. You now only have "+gold+" gold");
+		}
 		Scene3_0();
 	}else{
 		sceneDeath();
@@ -182,7 +187,7 @@ function Scene3_0_option1Act(){
 	}
 }
 function Scene3_0_option2Act(){
-	if(checkStats("def", (3 * difficultyMultiplyer))){
+	if( (checkStats("def", (3 * difficultyMultiplyer)))&&(incentive < difficultyMultiplyer) ){
 		incentive+=1;
 		Scene3_0();
 	}else{
