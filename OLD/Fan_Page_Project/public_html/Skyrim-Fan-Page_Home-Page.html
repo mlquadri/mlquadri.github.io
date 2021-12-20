@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!--
+Main page for the Skyrim Fan Page Project 
+-->
+<html>
+   <head>
+      <title>
+         Skyrim Fan Page | Home Page 1
+      </title>
+      <style> 
+         .dragonGlitch{
+            position: relative;
+            z-index: +5;
+            width: 400px;
+            height: 275px;
+            left:0px;
+            top:06px;
+            background-image:url('http://mlquadri.github.io/Library/Images/skyrim-glitch-dragon.gif');
+            animation-name: dragonGlitching;
+            animation-duration: 100s;
+            animation-delay: 20s;
+            animation-iteration-count: 15;
+            -webkit-animation-name: dragonGlitching; /* Safari 4.0 - 8.0 */
+            -webkit-animation-duration: 100s; /* Safari 4.0 - 8.0 */
+            -webkit-animation-delay: 20s; /* Safari 4.0 - 8.0 */
+            -webkit-animation-iteration-count: 15; /* Safari 4.0 - 8.0 */
+         }
+         
+         /* Safari 4.0 - 8.0 */
+         @-webkit-keyframes dragonGlitching {
+            0%   {background-color:red; left:0px; top:0px;}
+            20%   {left:50px; top:150px;}
+            25%  {left:1400px; top:0px;}
+            50%  {left:1400px; top:2000px;}
+            75%  {left:0px; top:1500px;}
+            100% {left:0px; top:1500px;}
+         }
+
+         /* Standard syntax */
+         @keyframes dragonGlitching {
+            0%   {left:50px; top:150px;}
+            25%  {left:1400px; top:0px;}
+            50%  {left:1400px; top:2000px;}
+            75%  {left:0px; top:1500px;}
+            100% {left:0px; top:1500px;}
+         }
+      </style>
+   </head>
+   <body>
+      <div>
+         <h1 style="color:white; background-image:url('http://mlquadri.github.io/Library/Images/Elder-Scrolls-Skyrim-header.jpg'); width:1600px; height:60px; margin:auto; text-align:center;">
+            Skyrim Fan Page
+         </h1>
+      </div>
+         <div style="color:white; width:1600px; height:500px; margin:auto; background-image:url('http://mlquadri.github.io/Library/Images/skyrim-chest.jpg'); text-align:center; border-color:red; border-style:solid; border-width:thin;">
+            <h2>
+               <a href="Quests.html">
+                  Quests
+               </a>
+            </h2>
+         </div>
+      <div style="color:white; width:1600px; height:500px; margin:auto; background-image:url('http://mlquadri.github.io/Library/Images/Altar-of-Malog-Bal.png'); text-align:center; border-color:red; border-style:solid; border-width:thin;">
+         <h2>
+            <a href="Artifacts.html">
+               Artifacts
+            </a>
+         </h2>
+      </div>
+      <div style="color:white; width:1600px; height:500px; margin:auto; background-image:url('https://mlquadri.github.io/Library/Images/Dark-Brotherhood-door.gif'); text-align:center; border-color:red; border-style:solid; border-width:thin;">
+      <h2>
+         <a href="Factions-and-Companions.html">
+            Factions and Companions
+         </a>
+      </h2>
+      </div>
+      <div style="color:white; width:1600px; height:500px; margin:auto; background-image:url('http://mlquadri.github.io/Library/Images/Giant-Chicken.jpg'); text-align:center; border-color:red; border-style:solid; border-width:thin;">
+         <h2>
+            <a href="Mods.html">
+               Mods
+            </a>
+         </h2>
+      </div>
+      <div style="margin:auto">
+         <video width="320" height="240" controls>
+            <source src="http://mlquadri.github.io/Library/Video/ESV-trailer.mp4" type="video/mp4">
+         </video>
+         <audio controls autoplay loop>
+            <source src="http://mlquadri.github.io/Library/Music/01 Dragonborn.mp3" type="audio/mp3">
+         </audio>
+      </div>
+      <a href="http://mlquadri.github.io/Library/Images/Elder-Scrolls-Skyrim-header.jpg"><div class="dragonGlitch">Skyrim is glitchy as sh!t</div></a>
+   </body>
+</html>

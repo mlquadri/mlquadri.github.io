@@ -1,0 +1,68 @@
+/*
+Author: Muhammed Quadri
+*/
+
+/*
+ * Basic Formating
+*/
+
+body {
+  background-color: black;
+}
+
+div.whiteBack{
+	background-color: white;
+	margin-left: 5%;
+	margin-right: 5%;
+	margin-top: 5%;
+	min-height: 100vh;
+}
+
+.centeredContent{
+	display: flex;
+	justify-content: center;
+}
+
+/*
+ * Nav Bar
+*/
+
+.inLine{
+	float: left;
+	margin-right: 10px;
+}
+
+.navBarLogoText{
+	float: right;
+	margin-right: 10px;
+}
+
+.fixedNavBar{
+	background-color: green;
+    position: fixed;
+	margin-left: 5%;
+    width: 89%;
+    top: 0px;
+    z-index: 10;
+}
+
+.dropDownButtons{
+	list-style-type:none;
+}
+
+.hasDropDown{
+	position: relative;
+	display: inline-block;
+}
+
+.dropDownContent{
+	list-style-type:none;
+	display: none;
+	position: absolute;
+	z-index: 1;
+	min-width: 100%;
+}
+
+.hasDropDown:hover .dropDownContent{
+	display: block;
+}

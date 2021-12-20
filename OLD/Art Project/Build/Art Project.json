@@ -1,0 +1,13 @@
+{
+"companyName": "mlquadri",
+"productName": "Art Game",
+"dataUrl": "Art Project.data.unityweb",
+"wasmCodeUrl": "Art Project.wasm.code.unityweb",
+"wasmFrameworkUrl": "Art Project.wasm.framework.unityweb",
+"TOTAL_MEMORY": 268435456,
+"graphicsAPI": ["WebGL 2.0", "WebGL 1.0"],
+"webglContextAttributes": {"preserveDrawingBuffer": false},
+"splashScreenStyle": "Dark",
+"backgroundColor": "#231F20",
+"cacheControl": {"default": "must-revalidate"}
+}
