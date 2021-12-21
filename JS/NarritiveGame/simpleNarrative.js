@@ -15,19 +15,16 @@ var nameInput;
 
 var growingPlanetBool = false;
 
-
 var startOver;
 
 //images
 
 var dancingBaby;
 var babyX = 0;
-
 var babySpeed = 2;
-
 var babySlider; 
-
 var babyScale;
+
 function preload(){
 	
 }
@@ -58,7 +55,7 @@ function draw() {
 function beginning(){
 	background(0);
 	
-	dancingBaby = createImg("dancingBaby.gif");
+	dancingBaby = createImg("../../Media/Images/NaraviveGame/dancingBaby.gif");
 	 babySlider = createSlider(50, 600, 150);
 	greeting = createP("Please type your name and press enter");
 	nameInput = createInput();
@@ -168,7 +165,6 @@ function growingPlanet(){
 
 function windowResized(){
   canvas = createCanvas(windowWidth, windowHeight);
-  
 }
  
  
