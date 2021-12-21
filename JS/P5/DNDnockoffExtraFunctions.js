@@ -286,7 +286,7 @@ function setUpTags(){
     createElement('br');
 	option4 = createA("#","");
     createElement('br');
-	restart = createA("index2.html","Try Agian"); 
+	restart = createA("P5-Scene_Game.html","Try Agian"); 
 	restart.hide();
 }
 
