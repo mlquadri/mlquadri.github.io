@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.media.MediaView?>
+
+
+<BorderPane maxHeight = "-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" stylesheets="@style.css" xmlns="http://javafx/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" fx:controller="meadia.player.FXMLDocumentController">
+    <bottom>
+        <VBox prefHeight="20.0" prefWidth="600.0" BorderPane.alignment="Bottom_Center">
+            <children>
+                <HBox prefHeight="20.0" prefWidth="600.0">
+                    <children>
+                        <Button fx:id="openFile" mnemonicParsing="false" onAction="#handleButtonAction" text="" />
+                        <Button fx:id="Play" mnemonicParsing="false" onAction="#pauseVideo" text="" />
+                        <Button fx:id="Pause" mnemonicParsing="false" onAction="#playVideo" text="" />
+                        <Button fx:id="Fish Eye" mnemonicParsing="false" onAction="#fishEyeVideo" text="" />
+                        <Button fx:id="Sub-Titles" mnemonicParsing="false" onAction="#subtitleVideo" text="" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </bottom>
+    <center>
+        <StackPane prefHeight="150.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+            <children>
+                <MediaView fx:id="mediaView" fitHeight="200.0" fitWidth="200.0"/>
+            </children>
+        </StackPane>
+    </center>
+</BorderPane>
