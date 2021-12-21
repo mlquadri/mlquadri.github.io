@@ -39,13 +39,13 @@ function draw(){
 		alert(score);
 		lives--;
 	}else{
-	//background(0, 0, 0);
-	image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight);
+		background(0, 0, 0);
+		image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight);
 	}
 }
 
 function keyPressed() {
-	if (keyCode === 13) {
+	if (keyCode === 32) {//space bar
 		addShot();
 	}else if (keyCode === 39) {//right
 	}else if (keyCode === 37) {//left
