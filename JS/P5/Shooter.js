@@ -18,10 +18,10 @@ var intervalID = setInterval(fps, 1000);
 ///////////////////////////////////////////////////////////////////////////////////
 
 function preload(){
-	enemyPic = loadImage("Library/Images/SpaceInvaders.png");
-	shotPic =  loadImage("Library/Images/missile.png");
-	player = loadImage("Library/Images/SpaceShip.png");
-	game_over = loadImage("Library/Images/Game_Over.png");
+	enemyPic = loadImage("../../Media/Images/P5/SpaceInvaders.png");
+	shotPic =  loadImage("../../Media/Images/P5/missile.png");
+	player = loadImage("../../Media/Images/P5/SpaceShip.png");
+	game_over = loadImage("../../Media/Images/P5/Game_Over.png");
 }
 
 function setup(){

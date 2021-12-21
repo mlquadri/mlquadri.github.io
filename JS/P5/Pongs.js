@@ -11,8 +11,8 @@ var enemyPic;
 var game_over;
 
 function preload(){
-	enemyPic = loadImage("Library/Images/furby.png");
-	game_over = loadImage("Library/Images/Game_Over.png");
+	enemyPic = loadImage("../../Media/Images/P5/furby.png");
+	game_over = loadImage("../../Media/Images/P5/Game_Over.png");
 }
 
 //code in setup runs once
