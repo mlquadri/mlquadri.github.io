@@ -39,7 +39,7 @@ function draw(){
 		alert(score);
 		lives--;
 	}else{
-	background(0, 0, 0);
+	//background(0, 0, 0);
 	image(game_over, (windowWidth/2), (windowHeight/2), windowWidth, windowHeight);
 	}
 }
