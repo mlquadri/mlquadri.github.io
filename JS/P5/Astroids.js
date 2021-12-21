@@ -82,7 +82,8 @@ function addEnemy(){
 function collitionTest(){
 	for (var i = 0; i < enemyList.length; i++){
 		//var distance = Math.pow( (Math.pow( mouseX−(enemyList[i].getx()), 2)+Math.pow( mouseY−(enemyList[i].gety()), 2)) , (1/2));
-		if( (mouseX == enemyList[i].getx()) && (mouseY == enemyList[i].gety()) ){
+		if( (mouseX >= enemyList[i].getx() && mouseX <= (enemyList[i].getx()+enemySize)) && 
+			(mouseY >= enemyList[i].gety() && mouseY <= (enemyList[i].gety()+enemySize)) ){
 			lives--;
 			enemyList.splice(i,1);
 		}
